@@ -1,656 +1,189 @@
-(() => {
-  const elements = {
-    startView: document.getElementById('viewStart'),
-    examView: document.getElementById('viewExam'),
-    resultView: document.getElementById('viewResult'),
-    dataInput: document.getElementById('dataInput'),
-    pasteBtn: document.getElementById('pasteBtn'),
-    startTestBtn: document.getElementById('startTestBtn'),
-    examTitleDisplay: document.getElementById('examTitleDisplay'),
-    questionCounter: document.getElementById('questionCounter'),
-    sequencerProgress: document.getElementById('sequencerProgress'),
-    sequencerState: document.getElementById('sequencerState'),
-    sequencerMessage: document.getElementById('sequencerMessage'),
-    masterPlayBtn: document.getElementById('masterPlayBtn'),
-    questionArea: document.getElementById('questionArea'),
-    prevQBtn: document.getElementById('prevQBtn'),
-    nextQBtn: document.getElementById('nextQBtn'),
-    submitTestBtn: document.getElementById('submitTestBtn'),
-    scoreDisplay: document.getElementById('scoreDisplay'),
-    resultList: document.getElementById('resultList'),
-    returnTopBtn: document.getElementById('returnTopBtn'),
-    toggleDoubtBtn: document.getElementById('toggleDoubtBtn'),
-    loginOverlay: document.getElementById('loginOverlay'),
-    userIdInput: document.getElementById('userIdInput'),
-    loginBtn: document.getElementById('loginBtn'),
-    accountStatusPill: document.getElementById('accountStatusPill'),
-    planDisplay: document.getElementById('planDisplay'),
-    creditDisplay: document.getElementById('creditDisplay'),
-    settingsBtn: document.getElementById('settingsBtn'),
-    logoutBtn: document.getElementById('logoutBtn'),
-    saveSettingsBtn: document.getElementById('saveSettingsBtn'),
-    settingAutoLogin: document.getElementById('settingAutoLogin'),
-    settingSpeed: document.getElementById('settingSpeed'),
-    settingSpeedVal: document.getElementById('settingSpeedVal'),
-    globalSpeed: document.getElementById('globalSpeed'),
-    globalSpeedVal: document.getElementById('globalSpeedVal'),
-    settingsModal: document.getElementById('settingsModal'),
-    closeSettingsBtn: document.getElementById('closeSettingsBtn'),
-    reviewModal: document.getElementById('reviewModal'),
-    reviewModalTitle: document.getElementById('reviewModalTitle'),
-    reviewModalIcon: document.getElementById('reviewModalIcon'),
-    reviewScriptArea: document.getElementById('reviewScriptArea'),
-    closeReviewBtn: document.getElementById('closeReviewBtn'),
-    reviewPlayAllBtn: document.getElementById('reviewPlayAllBtn'),
-    toast: document.getElementById('toast')
-  };
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#dfe9ff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Listening Pro" />
+    <title>Listening Pro</title>
+    <meta name="description" content="Listening Pro - listening practice with mobile-friendly speech and an elegant liquid-glass UI." />
+    <link rel="icon" type="image/svg+xml" href="assets/favicon/favicon.svg" />
+    <link rel="apple-touch-icon" href="assets/favicon/icon-iphone.svg" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-blur"></div>
 
-  const STORAGE = {
-    userId: 'listening_pro_user_id',
-    autoLogin: 'listening_pro_auto_login',
-    speed: 'listening_pro_speed',
-    settings: 'listening_pro_settings'
-  };
+    <header class="topbar glass-panel">
+      <div class="brand-wrap">
+        <button id="homeBtn" class="icon-btn glass-soft" type="button" aria-label="ホームに戻る">⌂</button>
+        <div class="brand-mark">L</div>
+        <div>
+          <div class="brand-title">Listening Pro</div>
+        </div>
+      </div>
 
-  const DEFAULT_QUESTIONS = [
-    {
-      prompt: 'Good morning. I would like a coffee and a sandwich, please.',
-      choices: [
-        'A coffee and a sandwich, please.',
-        'I am leaving now.',
-        'The train is late.',
-        'I do not like tea.'
-      ],
-      answerIndex: 0,
-      explanation: 'This is the most natural response to a café order.'
-    },
-    {
-      prompt: 'Could you repeat that more slowly?',
-      choices: [
-        'Sure, I can say it again more slowly.',
-        'It is already very fast.',
-        'I am in the bus station.',
-        'We should leave now.'
-      ],
-      answerIndex: 0,
-      explanation: 'The response politely asks for slower speech.'
-    },
-    {
-      prompt: 'I am running 10 minutes late because of traffic.',
-      choices: [
-        'I am sorry, I am delayed by traffic.',
-        'Please bring me the menu.',
-        'I will call you tomorrow.',
-        'This is my favorite book.'
-      ],
-      answerIndex: 0,
-      explanation: 'It naturally acknowledges the delay and the reason.'
-    },
-    {
-      prompt: 'Please check the battery level before we leave.',
-      choices: [
-        'Let us confirm the battery level first.',
-        'The weather is sunny today.',
-        'I cannot hear anything.',
-        'The meeting is at midnight.'
-      ],
-      answerIndex: 0,
-      explanation: 'This is the correct summary of the instruction.'
-    }
-  ];
+      <div class="top-controls">
+        <div class="speed-group glass-soft">
+          <span class="label">Speed</span>
+          <input id="globalSpeed" type="range" min="0.7" max="1.8" step="0.1" value="1.0" aria-label="再生速度" />
+          <span id="globalSpeedVal" class="speed-value">1.0x</span>
+        </div>
 
-  const state = {
-    userId: localStorage.getItem(STORAGE.userId) || 'guest',
-    autoLogin: localStorage.getItem(STORAGE.autoLogin) !== 'false',
-    speed: Number(localStorage.getItem(STORAGE.speed) || '1.0'),
-    questions: [],
-    currentIndex: 0,
-    answers: [],
-    doubtFlags: [],
-    score: 0,
-    userPlan: 'Free',
-    credits: 20,
-    loadedUsers: new Map()
-  };
+        <div class="user-pill glass-soft hidden" id="accountStatusPill">
+          <span id="planDisplay" class="plan-display">Free</span>
+          <span class="divider">|</span>
+          <span class="tiny-label">残:</span>
+          <span id="creditDisplay" class="credit-display">0</span>
+        </div>
 
-  const clampSpeed = (value) => Math.min(1.8, Math.max(0.7, Number(value) || 1));
+        <button id="settingsBtn" class="icon-btn glass-soft hidden" aria-label="設定">⚙️</button>
+        <button id="logoutBtn" class="secondary-btn hidden" aria-label="ログアウト">ログアウト</button>
+      </div>
+    </header>
 
-  function showToast(message) {
-    const toast = elements.toast;
-    if (!toast) return;
-    toast.textContent = message;
-    toast.classList.add('show');
-    clearTimeout(showToast.timer);
-    showToast.timer = setTimeout(() => {
-      toast.classList.remove('show');
-    }, 1800);
-  }
+    <main class="app-shell">
+      <section id="viewStart" class="panel fade-in">
+        <div class="glass-panel intro-card">
+          <div class="intro-row">
+            <div class="ai-badge">AI</div>
+            <div>
+              <h2>問題作成 AI</h2>
+              <p>長野県型のリスニング問題を自動生成</p>
+            </div>
+            <a class="pill-btn youtube" href="https://gemini.google.com/gem/16191J3m6-vRc2WCqNC0wJCFQplKZBZ0s" target="_blank" rel="noreferrer">Geminiを開く</a>
+          </div>
+        </div>
 
-  function setSpeedValue(value, persist = false) {
-    const safe = clampSpeed(value);
-    state.speed = safe;
-    localStorage.setItem(STORAGE.speed, String(safe));
+        <div class="glass-panel form-card">
+          <h3>Data Input</h3>
+          <p class="muted">Base64 または N-Format の文字列を貼り付けてください。</p>
+          <button id="pasteBtn" class="primary-btn alt" type="button">クリップボードから入力</button>
+          <textarea id="dataInput" placeholder="テキストをここに入力..." spellcheck="false"></textarea>
+          <button id="startTestBtn" class="primary-btn wide disabled" type="button">テストを開始</button>
+        </div>
+      </section>
 
-    if (elements.globalSpeed) elements.globalSpeed.value = String(safe);
-    if (elements.settingSpeed) elements.settingSpeed.value = String(safe);
-    if (elements.globalSpeedVal) elements.globalSpeedVal.textContent = `${safe.toFixed(1)}x`;
-    if (elements.settingSpeedVal) elements.settingSpeedVal.textContent = `${safe.toFixed(1)}x`;
+      <section id="viewExam" class="panel hidden">
+        <div class="exam-head">
+          <h3 id="examTitleDisplay">Listening Test</h3>
+          <div class="counter-badge">Q <span id="questionCounter">1/1</span></div>
+        </div>
 
-    if (persist) {
-      try {
-        const settings = JSON.parse(localStorage.getItem(STORAGE.settings) || '{}');
-        settings.defaultSpeed = safe;
-        localStorage.setItem(STORAGE.settings, JSON.stringify(settings));
-      } catch {}
-    }
-  }
+        <div class="sequencer glass-panel">
+          <div id="sequencerProgress" class="sequencer-progress"></div>
+          <div id="sequencerState" class="tiny-label sequencer-state">STANDBY</div>
+          <div id="sequencerMessage" class="sequencer-message">▶️ 音声を再生して開始</div>
+          <button id="masterPlayBtn" class="primary-btn" type="button">音声を再生</button>
+        </div>
 
-  function setView(viewName) {
-    const map = { start: elements.startView, exam: elements.examView, result: elements.resultView };
-    Object.entries(map).forEach(([name, node]) => {
-      if (node) node.classList.toggle('hidden', name !== viewName);
-    });
-  }
+        <div class="question-shell glass-panel">
+          <button id="toggleDoubtBtn" class="doubt-btn" type="button" aria-label="疑問あり">?</button>
+          <div id="svgContainer" class="svg-box hidden"></div>
+          <div id="questionArea"></div>
+        </div>
 
-  function updateAccountStatus() {
-    const pill = elements.accountStatusPill;
-    const plan = state.userPlan || 'Free';
-    const credits = Number(state.credits || 0);
+        <div class="nav-row">
+          <button id="prevQBtn" class="secondary-btn nav" type="button">◀ 前へ</button>
+          <button id="submitTestBtn" class="primary-btn submit hidden" type="button">採点する</button>
+          <button id="nextQBtn" class="secondary-btn nav" type="button">次へ ▶</button>
+        </div>
+      </section>
 
-    if (elements.planDisplay) elements.planDisplay.textContent = plan;
-    if (elements.creditDisplay) elements.creditDisplay.textContent = String(credits);
-    if (pill) pill.classList.toggle('hidden', !state.userId || !state.userId.trim() || state.userId === 'guest');
-  }
+      <section id="viewResult" class="panel hidden">
+        <div class="glass-panel score-card">
+          <div class="score-label">SCORE</div>
+          <div class="score-display"><span id="scoreDisplay">0</span><span class="score-max">/100</span></div>
+        </div>
 
-  function parseCsvLine(line) {
-    const cells = [];
-    let current = '';
-    let inQuotes = false;
+        <div class="glass-panel result-list-card">
+          <div class="result-title">問題リスト</div>
+          <ul id="resultList" class="result-list"></ul>
+        </div>
 
-    for (let i = 0; i < line.length; i += 1) {
-      const char = line[i];
-      if (char === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          current += '"';
-          i += 1;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char === ',' && !inQuotes) {
-        cells.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
+        <button id="returnTopBtn" class="primary-btn wide" type="button">トップに戻る</button>
+      </section>
+    </main>
 
-    cells.push(current.trim());
-    return cells;
-  }
+    <div id="loginOverlay" class="login-overlay">
+      <div class="login-box glass-panel">
+        <div class="brand-mark login-mark">L</div>
+        <h1>Listening Pro</h1>
+        <p>指定されたIDを入力してください</p>
 
-  function normalizePlan(value) {
-    const plan = String(value || 'Free').trim();
-    return plan || 'Free';
-  }
+        <input id="userIdInput" type="text" inputmode="text" autocomplete="username" placeholder="User ID" aria-label="User ID" />
+        <button id="loginBtn" class="primary-btn wide" type="button">ログイン</button>
+      </div>
+    </div>
 
-  async function loadUsersCsv() {
-    try {
-      const response = await fetch('./data/users.csv', { cache: 'no-store' });
-      if (!response.ok) return;
-      const text = await response.text();
-      const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
-      if (!lines.length) return;
+    <div id="reviewModal" class="modal hidden">
+      <div id="reviewModalBg" class="modal-bg"></div>
+      <div id="reviewModalContent" class="modal-sheet">
+        <div class="sheet-top">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header-row">
+            <div class="sheet-header-left">
+              <span id="reviewModalIcon" class="review-icon">◯</span>
+              <h3 id="reviewModalTitle">復習</h3>
+            </div>
+            <button id="closeReviewBtn" class="icon-btn glass-soft" type="button" aria-label="閉じる">✕</button>
+          </div>
+        </div>
 
-      const headers = parseCsvLine(lines[0]).map((cell) => cell.trim().toLowerCase());
-      const idIndex = headers.indexOf('id');
-      const creditsIndex = headers.findIndex((cell) => ['credits', 'credit'].includes(cell));
-      const planIndex = headers.findIndex((cell) => ['plan', 'tier'].includes(cell));
+        <div class="review-controls">
+          <button id="reviewPlayAllBtn" class="primary-btn small" type="button">通して聴く</button>
+        </div>
 
-      if (idIndex === -1) return;
+        <div id="reviewScriptArea" class="review-area"></div>
+      </div>
+    </div>
 
-      for (let i = 1; i < lines.length; i += 1) {
-        const cells = parseCsvLine(lines[i]);
-        const rawId = (cells[idIndex] || '').trim();
-        if (!rawId) continue;
+    <div id="settingsModal" class="modal hidden">
+      <div id="settingsModalBg" class="modal-bg"></div>
+      <div id="settingsModalContent" class="modal-sheet settings-sheet">
+        <div class="sheet-top">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header-row">
+            <h3>⚙️ 設定</h3>
+            <button id="closeSettingsBtn" class="icon-btn glass-soft" type="button" aria-label="閉じる">✕</button>
+          </div>
+        </div>
 
-        const credits = Number(cells[creditsIndex] || '0');
-        const plan = normalizePlan(cells[planIndex] || 'Free');
-        state.loadedUsers.set(rawId, {
-          credits: Number.isFinite(credits) ? credits : 0,
-          plan
+        <div class="settings-inner">
+          <div class="setting-row">
+            <div>
+              <div class="setting-title">自動ログイン</div>
+              <div class="muted">次回起動時にIDを保持します</div>
+            </div>
+            <label class="switch">
+              <input id="settingAutoLogin" type="checkbox" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row slider-row">
+            <div class="setting-title">デフォルト再生速度</div>
+            <span id="settingSpeedVal" class="speed-value">1.0x</span>
+          </div>
+          <input id="settingSpeed" type="range" min="0.7" max="1.8" step="0.1" value="1.0" />
+
+          <button id="saveSettingsBtn" class="primary-btn wide" type="button">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(() => {});
         });
       }
-    } catch (error) {
-      console.warn('Could not load users.csv', error);
-    }
-  }
-
-  function validateInput() {
-    const value = (elements.dataInput?.value || '').trim();
-    const isReady = !!value;
-    if (elements.startTestBtn) {
-      elements.startTestBtn.disabled = !isReady;
-      elements.startTestBtn.classList.toggle('disabled', !isReady);
-    }
-  }
-
-  function loginUser(rawId) {
-    const userId = String(rawId || '').trim();
-    if (!userId) {
-      showToast('IDを入力してください');
-      return;
-    }
-
-    const userRecord = state.loadedUsers.get(userId) || { credits: 20, plan: 'Free' };
-    state.userId = userId;
-    state.userPlan = userRecord.plan || 'Free';
-    state.credits = Number(userRecord.credits || 0);
-
-    localStorage.setItem(STORAGE.userId, userId);
-    localStorage.setItem(STORAGE.autoLogin, String(state.autoLogin));
-
-    if (elements.userIdInput) elements.userIdInput.value = userId;
-    updateAccountStatus();
-    if (elements.loginOverlay) elements.loginOverlay.classList.add('hidden');
-    showToast(`ようこそ、${userId} さん`);
-  }
-
-  function logoutUser() {
-    state.userId = 'guest';
-    state.userPlan = 'Free';
-    state.credits = 20;
-    localStorage.removeItem(STORAGE.userId);
-    if (elements.userIdInput) elements.userIdInput.value = '';
-    updateAccountStatus();
-    if (elements.loginOverlay) elements.loginOverlay.classList.remove('hidden');
-    showToast('ゲストモードで再開しました');
-  }
-
-  function decodeBase64Maybe(value) {
-    try {
-      const normalized = value.replace(/\s+/g, '');
-      if (!normalized || !/^[A-Za-z0-9+/=]+$/.test(normalized)) return null;
-      return atob(normalized);
-    } catch {
-      return null;
-    }
-  }
-
-  function buildQuestionsFromSource(rawText) {
-    const cleaned = String(rawText || '').trim();
-    if (!cleaned) {
-      return DEFAULT_QUESTIONS.map((question, index) => ({
-        ...question,
-        prompt: `${index + 1}. ${question.prompt}`
-      }));
-    }
-
-    const base64Text = decodeBase64Maybe(cleaned);
-    const text = (base64Text && base64Text.trim()) ? base64Text : cleaned;
-    const lines = text
-      .split(/\r?\n|\.|\?|!|\u3002|\uff1f|\uff01/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .slice(0, 8);
-
-    if (!lines.length) return DEFAULT_QUESTIONS;
-
-    return lines.map((sentence, index) => {
-      const safeSentence = sentence.replace(/\s+/g, ' ');
-      const choices = [
-        safeSentence,
-        index % 2 === 0 ? 'Please wait for a moment.' : 'Could you say that again?',
-        index % 3 === 0 ? 'I am not sure.' : 'Let us continue.',
-        index % 4 === 0 ? 'That sounds correct.' : 'I understand now.'
-      ];
-
-      return {
-        prompt: safeSentence,
-        choices: choices.slice(0, 4),
-        answerIndex: 0,
-        explanation: 'この文は入力された音声テキストから生成されました。'
-      };
-    });
-  }
-
-  function renderQuestion() {
-    const question = state.questions[state.currentIndex];
-    if (!question) return;
-
-    if (elements.questionArea) elements.questionArea.innerHTML = '';
-
-    const prompt = document.createElement('p');
-    prompt.textContent = question.prompt;
-    if (elements.questionArea) elements.questionArea.appendChild(prompt);
-
-    const list = document.createElement('div');
-    list.className = 'choice-list';
-
-    question.choices.forEach((choice, index) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'choice-item';
-      if (state.answers[state.currentIndex] === index) button.classList.add('selected');
-
-      const radio = document.createElement('span');
-      radio.className = 'choice-radio';
-      const dot = document.createElement('span');
-      dot.className = 'choice-dot';
-      radio.appendChild(dot);
-
-      const text = document.createElement('span');
-      text.className = 'choice-text';
-      text.textContent = choice;
-
-      button.appendChild(radio);
-      button.appendChild(text);
-      button.addEventListener('click', () => {
-        state.answers[state.currentIndex] = index;
-        renderQuestion();
-      });
-      list.appendChild(button);
-    });
-
-    if (elements.questionArea) elements.questionArea.appendChild(list);
-
-    const current = state.currentIndex + 1;
-    const total = state.questions.length;
-    if (elements.questionCounter) elements.questionCounter.textContent = `${current}/${total}`;
-    if (elements.sequencerProgress) elements.sequencerProgress.style.width = `${((current / total) * 100) || 0}%`;
-    if (elements.sequencerState) elements.sequencerState.textContent = 'ACTIVE';
-    if (elements.sequencerMessage) elements.sequencerMessage.textContent = `▶️ 問題 ${current} / ${total}`;
-
-    const hasAnswer = Number.isInteger(state.answers[state.currentIndex]);
-    if (elements.submitTestBtn) elements.submitTestBtn.classList.toggle('hidden', current < total || !hasAnswer);
-    if (elements.nextQBtn) elements.nextQBtn.textContent = state.currentIndex === total - 1 ? '終了' : '次へ ▶';
-    if (elements.prevQBtn) elements.prevQBtn.disabled = state.currentIndex === 0;
-    if (elements.toggleDoubtBtn) {
-      elements.toggleDoubtBtn.classList.toggle('active', !!state.doubtFlags[state.currentIndex]);
-      elements.toggleDoubtBtn.setAttribute('aria-label', state.doubtFlags[state.currentIndex] ? '疑問あり' : '疑問なし');
-    }
-  }
-
-  function playText(text) {
-    if (!('speechSynthesis' in window)) {
-      showToast('この端末では音声再生が利用できません');
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    utterance.rate = state.speed;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-    utterance.onend = () => {
-      if (elements.sequencerState) elements.sequencerState.textContent = 'READY';
-      if (elements.sequencerMessage) elements.sequencerMessage.textContent = '▶️ 音声を再生して開始';
-    };
-    if (elements.sequencerState) elements.sequencerState.textContent = 'PLAYING';
-    if (elements.sequencerMessage) elements.sequencerMessage.textContent = '▶️ 再生中';
-    window.speechSynthesis.speak(utterance);
-  }
-
-  function startExamFromText(rawText) {
-    const questions = buildQuestionsFromSource(rawText);
-    state.questions = questions;
-    state.answers = new Array(questions.length).fill(undefined);
-    state.doubtFlags = new Array(questions.length).fill(false);
-    state.currentIndex = 0;
-    state.score = 0;
-
-    if (elements.examTitleDisplay) elements.examTitleDisplay.textContent = 'Listening Test';
-    setView('exam');
-    renderQuestion();
-    if (questions.length) playText(questions[0].prompt);
-  }
-
-  function handleNextQuestion() {
-    if (state.currentIndex < state.questions.length - 1) {
-      state.currentIndex += 1;
-      renderQuestion();
-      return;
-    }
-
-    const answeredCount = state.answers.filter((answer) => Number.isInteger(answer)).length;
-    if (answeredCount !== state.questions.length) {
-      showToast('すべての問題に回答してください');
-      return;
-    }
-
-    submitTest();
-  }
-
-  function handlePreviousQuestion() {
-    if (state.currentIndex > 0) {
-      state.currentIndex -= 1;
-      renderQuestion();
-    }
-  }
-
-  function submitTest() {
-    const total = state.questions.length || 1;
-    let correct = 0;
-
-    state.questions.forEach((question, index) => {
-      if (state.answers[index] === question.answerIndex) correct += 1;
-    });
-
-    state.score = Math.round((correct / total) * 100);
-    if (elements.scoreDisplay) elements.scoreDisplay.textContent = String(state.score);
-
-    if (elements.resultList) elements.resultList.innerHTML = '';
-    state.questions.forEach((question, index) => {
-      const item = document.createElement('li');
-      item.className = 'result-item';
-      item.innerHTML = `
-        <span class="result-icon">${state.answers[index] === question.answerIndex ? '✅' : '❌'}</span>
-        <span>Q${index + 1}</span>
-      `;
-      item.addEventListener('click', () => openReviewModal(index));
-      if (elements.resultList) elements.resultList.appendChild(item);
-    });
-
-    setView('result');
-    showToast(`採点結果: ${state.score} 点`);
-  }
-
-  function openReviewModal(startIndex = 0) {
-    const modal = elements.reviewModal;
-    if (!modal) return;
-    modal.classList.remove('hidden');
-    modal.classList.add('open');
-
-    if (elements.reviewModalTitle) elements.reviewModalTitle.textContent = '復習';
-    if (elements.reviewModalIcon) elements.reviewModalIcon.textContent = '◯';
-
-    const reviewMarkup = state.questions
-      .map((question, index) => {
-        const chosen = state.answers[index];
-        const isCorrect = chosen === question.answerIndex;
-        const statusClass = isCorrect ? 'correct' : chosen === undefined ? 'neutral' : 'wrong';
-        const chosenLabel = Number.isInteger(chosen) ? question.choices[chosen] : '未回答';
-        const correctLabel = question.choices[question.answerIndex];
-
-        return `
-          <div class="review-card">
-            <div class="review-answers">
-              <div class="answer-chip ${statusClass}">
-                ${isCorrect ? '正解' : chosen === undefined ? '未回答' : '不正解'}
-              </div>
-              <div class="answer-chip neutral">あなたの回答: ${chosenLabel}</div>
-              <div class="answer-chip correct">正解: ${correctLabel}</div>
-            </div>
-            <div class="review-line">
-              <div class="review-avatar">Q${index + 1}</div>
-              <div class="review-bubble ${index === startIndex ? 'active' : ''}">
-                <p class="en">${question.prompt}</p>
-                <p class="ja">${question.explanation}</p>
-              </div>
-            </div>
-          </div>
-        `;
-      })
-      .join('');
-
-    if (elements.reviewScriptArea) elements.reviewScriptArea.innerHTML = reviewMarkup;
-  }
-
-  function closeReviewModal() {
-    if (elements.reviewModal) {
-      elements.reviewModal.classList.remove('open');
-      setTimeout(() => elements.reviewModal.classList.add('hidden'), 260);
-    }
-  }
-
-  function toggleDoubt() {
-    const current = state.currentIndex;
-    state.doubtFlags[current] = !state.doubtFlags[current];
-    renderQuestion();
-  }
-
-  function resetToStart() {
-    state.questions = [];
-    state.answers = [];
-    state.doubtFlags = [];
-    setView('start');
-    if (elements.dataInput) elements.dataInput.value = '';
-    validateInput();
-    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast('トップに戻りました');
-  }
-
-  function setupControls() {
-    if (elements.startTestBtn) {
-      elements.startTestBtn.disabled = true;
-      elements.startTestBtn.classList.add('disabled');
-      elements.startTestBtn.addEventListener('click', () => {
-        if (elements.startTestBtn.classList.contains('disabled')) return;
-        startExamFromText(elements.dataInput.value);
-      });
-    }
-
-    if (elements.dataInput) {
-      elements.dataInput.addEventListener('input', validateInput);
-    }
-
-    if (elements.pasteBtn) {
-      elements.pasteBtn.addEventListener('click', async () => {
-        try {
-          const text = await navigator.clipboard.readText();
-          if (elements.dataInput) elements.dataInput.value = text;
-          validateInput();
-        } catch {
-          showToast('クリップボードの読み取りに失敗しました');
-        }
-      });
-    }
-
-    if (elements.prevQBtn) elements.prevQBtn.addEventListener('click', handlePreviousQuestion);
-    if (elements.nextQBtn) elements.nextQBtn.addEventListener('click', handleNextQuestion);
-    if (elements.submitTestBtn) elements.submitTestBtn.addEventListener('click', submitTest);
-    if (elements.masterPlayBtn) elements.masterPlayBtn.addEventListener('click', () => {
-      const question = state.questions[state.currentIndex];
-      if (question) playText(question.prompt);
-    });
-    if (elements.toggleDoubtBtn) elements.toggleDoubtBtn.addEventListener('click', toggleDoubt);
-    if (elements.returnTopBtn) elements.returnTopBtn.addEventListener('click', resetToStart);
-
-    if (elements.loginBtn) elements.loginBtn.addEventListener('click', () => loginUser(elements.userIdInput.value));
-    if (elements.userIdInput) {
-      elements.userIdInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') loginUser(elements.userIdInput.value);
-      });
-    }
-
-    if (elements.settingsBtn) {
-      elements.settingsBtn.addEventListener('click', () => {
-        if (elements.settingsModal) {
-          elements.settingsModal.classList.remove('hidden');
-          elements.settingsModal.classList.add('open');
-        }
-      });
-    }
-
-    if (elements.closeSettingsBtn) {
-      elements.closeSettingsBtn.addEventListener('click', () => {
-        if (elements.settingsModal) {
-          elements.settingsModal.classList.remove('open');
-          setTimeout(() => elements.settingsModal.classList.add('hidden'), 260);
-        }
-      });
-    }
-
-    if (elements.closeReviewBtn) elements.closeReviewBtn.addEventListener('click', closeReviewModal);
-    if (elements.reviewModal) {
-      elements.reviewModal.addEventListener('click', (event) => {
-        if (event.target === elements.reviewModal) closeReviewModal();
-      });
-    }
-
-    if (elements.reviewPlayAllBtn) {
-      elements.reviewPlayAllBtn.addEventListener('click', () => {
-        const fullScript = state.questions.map((question) => question.prompt).join('. ');
-        playText(fullScript);
-      });
-    }
-
-    if (elements.logoutBtn) elements.logoutBtn.addEventListener('click', logoutUser);
-    if (elements.saveSettingsBtn) {
-      elements.saveSettingsBtn.addEventListener('click', () => {
-        state.autoLogin = !!elements.settingAutoLogin.checked;
-        localStorage.setItem(STORAGE.autoLogin, String(state.autoLogin));
-        setSpeedValue(elements.settingSpeed.value, true);
-        if (elements.settingsModal) {
-          elements.settingsModal.classList.remove('open');
-          setTimeout(() => elements.settingsModal.classList.add('hidden'), 260);
-        }
-        showToast('設定を保存しました');
-      });
-    }
-
-    if (elements.globalSpeed) {
-      elements.globalSpeed.addEventListener('input', (event) => setSpeedValue(event.target.value, true));
-    }
-
-    if (elements.settingSpeed) {
-      elements.settingSpeed.addEventListener('input', (event) => {
-        const value = Number(event.target.value);
-        setSpeedValue(value, true);
-      });
-    }
-
-    if (elements.settingAutoLogin) elements.settingAutoLogin.checked = state.autoLogin;
-    setSpeedValue(state.speed, false);
-  }
-
-  async function initialize() {
-    await loadUsersCsv();
-
-    if (!state.userId || state.userId === 'guest') {
-      state.userId = 'guest';
-      state.userPlan = 'Free';
-      state.credits = 20;
-      localStorage.setItem(STORAGE.userId, 'guest');
-      updateAccountStatus();
-      if (elements.loginOverlay) elements.loginOverlay.classList.remove('hidden');
-    } else {
-      const userRecord = state.loadedUsers.get(state.userId) || { credits: 20, plan: 'Free' };
-      state.userPlan = userRecord.plan || 'Free';
-      state.credits = Number(userRecord.credits || 0);
-      updateAccountStatus();
-      if (elements.loginOverlay) elements.loginOverlay.classList.add('hidden');
-    }
-
-    if (elements.settingsBtn) elements.settingsBtn.classList.toggle('hidden', !state.userId || state.userId === 'guest');
-    if (elements.logoutBtn) elements.logoutBtn.classList.toggle('hidden', !state.userId || state.userId === 'guest');
-    if (elements.accountStatusPill) elements.accountStatusPill.classList.remove('hidden');
-
-    setupControls();
-    setView('start');
-    validateInput();
-    showToast('Listening Pro を起動しました');
-  }
-
-  initialize();
-})();
+    </script>
+  </body>
+</html>

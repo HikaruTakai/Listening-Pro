@@ -1,1005 +1,660 @@
-* {
-  box-sizing: border-box;
-}
-
-:root {
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --bg-1: #eaf1ff;
-  --bg-2: #dfe9ff;
-  --glass: rgba(255,255,255,0.44);
-  --glass-strong: rgba(255,255,255,0.72);
-  --glass-border: rgba(255,255,255,0.58);
-  --shadow: rgba(44, 62, 111, 0.12);
-  --text: #1c2433;
-  --muted: #5d6d82;
-  --primary: #007aff;
-  --primary-2: #5ac8fa;
-  --success: #34c759;
-  --danger: #ff3b30;
-  --warning: #ffb020;
-  --ink: #0f172a;
-}
-
-html, body {
-  margin: 0;
-  min-height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", "Noto Sans JP", sans-serif;
-  color: var(--text);
-  background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
-  overscroll-behavior-y: none;
-}
-
-body {
-  min-height: 100dvh;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  touch-action: manipulation;
-}
-
-button, input, textarea {
-  font: inherit;
-}
-
-button {
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-
-textarea {
-  resize: vertical;
-}
-
-.bg-blur {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(1200px 440px at 20% 20%, rgba(255,255,255,0.42), transparent 55%),
-    radial-gradient(900px 360px at 80% 0%, rgba(90,200,250,0.18), transparent 50%),
-    radial-gradient(700px 320px at 40% 90%, rgba(138,154,255,0.18), transparent 50%);
-}
-
-.glass-panel {
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(24px) saturate(1.2);
-  -webkit-backdrop-filter: blur(24px) saturate(1.2);
-  box-shadow: 0 12px 32px rgba(66, 83, 115, 0.12);
-}
-
-.glass-soft {
-  background: rgba(255,255,255,0.38);
-  border: 1px solid rgba(255,255,255,0.5);
-  backdrop-filter: blur(18px) saturate(1.1);
-  -webkit-backdrop-filter: blur(18px) saturate(1.1);
-}
-
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  margin: 12px auto 0;
-  width: min(980px, calc(100% - 22px));
-  border-radius: 24px;
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.brand-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.brand-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  font-size: 1.1rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #4b74ff, #7a6af4 45%, #8dc7ff);
-  color: white;
-  box-shadow: 0 10px 24px rgba(90, 121, 255, 0.35);
-  letter-spacing: -0.06em;
-}
-
-.brand-title {
-  font-size: 0.96rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-}
-
-.top-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.speed-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  min-height: 40px;
-}
-
-.label, .tiny-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--muted);
-}
-
-#globalSpeed {
-  width: 110px;
-  accent-color: var(--primary);
-}
-
-.speed-value {
-  min-width: 38px;
-  text-align: right;
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: var(--primary);
-}
-
-.user-pill {
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.plan-display {
-  font-weight: 800;
-  color: #4f46e5;
-}
-
-.divider {
-  color: rgba(15, 23, 42, 0.25);
-}
-
-.credit-display {
-  font-weight: 800;
-  color: var(--ink);
-}
-
-.icon-btn, .secondary-btn, .primary-btn, .pill-btn {
-  min-height: 44px;
-  border-radius: 14px;
-  transition: transform 0.16s ease, opacity 0.2s ease, box-shadow 0.2s ease;
-}
-
-.icon-btn:active, .secondary-btn:active, .primary-btn:active, .pill-btn:active {
-  transform: scale(0.97);
-}
-
-.icon-btn {
-  width: 42px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  color: var(--ink);
-  font-size: 1.05rem;
-}
-
-.secondary-btn {
-  padding: 0 16px;
-  background: rgba(255,255,255,0.55);
-  color: var(--ink);
-  border: 1px solid rgba(255,255,255,0.52);
-}
-
-.primary-btn {
-  background: linear-gradient(135deg, var(--primary), #4f80ff);
-  color: white;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  padding: 0 18px;
-  box-shadow: 0 12px 26px rgba(0, 122, 255, 0.26);
-}
-
-.primary-btn.alt {
-  background: rgba(255,255,255,0.64);
-  color: var(--primary);
-  box-shadow: none;
-}
-
-.primary-btn.wide {
-  width: 100%;
-}
-
-.primary-btn.small {
-  padding: 0 14px;
-  min-width: 118px;
-}
-
-.primary-btn.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.pill-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 14px;
-  background: rgba(255,255,255,0.66);
-  color: #4f46e5;
-  border: 1px solid rgba(255,255,255,0.62);
-  font-weight: 800;
-  text-decoration: none;
-}
-
-.app-shell {
-  width: min(980px, calc(100% - 22px));
-  margin: 20px auto 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.panel {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.fade-in {
-  animation: fadeIn 0.36s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.intro-card, .form-card, .question-shell, .score-card, .result-list-card, .sequencer {
-  border-radius: 28px;
-}
-
-.intro-card {
-  padding: 18px 18px;
-}
-
-.intro-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.ai-badge {
-  width: 42px;
-  height: 42px;
-  border-radius: 15px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, #6d71ff, #8d84ff);
-  color: white;
-  font-weight: 800;
-  box-shadow: 0 12px 28px rgba(98, 93, 255, 0.28);
-}
-
-.intro-row h2 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.intro-row p {
-  margin: 4px 0 0;
-  font-size: 0.76rem;
-  color: var(--muted);
-}
-
-.form-card {
-  padding: 22px 22px 20px;
-}
-
-.form-card h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.muted {
-  margin: 8px 0 16px;
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-
-#dataInput {
-  width: 100%;
-  min-height: 120px;
-  margin-top: 14px;
-  background: rgba(255,255,255,0.42);
-  border: 1px solid rgba(255,255,255,0.56);
-  border-radius: 18px;
-  padding: 16px 16px;
-  color: var(--ink);
-  line-height: 1.6;
-  font-size: 0.96rem;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.32);
-}
-
-#dataInput:focus {
-  outline: 2px solid rgba(0,122,255,0.28);
-  outline-offset: 1px;
-}
-
-#startTestBtn {
-  margin-top: 16px;
-}
-
-.exam-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 4px;
-}
-
-.exam-head h3 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.counter-badge {
-  border-radius: 999px;
-  background: rgba(255,255,255,0.66);
-  border: 1px solid rgba(255,255,255,0.62);
-  padding: 7px 10px;
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: var(--primary);
-}
-
-.sequencer {
-  position: relative;
-  overflow: hidden;
-  padding: 16px 18px 18px;
-  background: linear-gradient(180deg, rgba(15,23,42,0.94), rgba(31,41,55,0.9));
-  border: 1px solid rgba(255,255,255,0.12);
-  color: white;
-}
-
-.sequencer-progress {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 4px;
-  width: 0%;
-  background: linear-gradient(90deg, #60a5fa, #007aff);
-  border-radius: 999px;
-}
-
-.sequencer-state {
-  color: rgba(255,255,255,0.62);
-  letter-spacing: 0.22em;
-  margin-top: 2px;
-  text-transform: uppercase;
-}
-
-.sequencer-message {
-  margin-top: 8px;
-  font-weight: 800;
-  min-height: 22px;
-}
-
-.sequencer .primary-btn {
-  display: block;
-  margin: 18px auto 0;
-}
-
-.question-shell {
-  position: relative;
-  padding: 18px 18px 24px;
-}
-
-.doubt-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.72);
-  border: 1px solid rgba(255,255,255,0.6);
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.doubt-btn.active {
-  background: rgba(255,176,32,0.12);
-  color: var(--warning);
-  border-color: rgba(255,176,32,0.35);
-}
-
-#svgContainer {
-  margin: 0 0 18px;
-  overflow: hidden;
-  border-radius: 18px;
-  border: 1px solid rgba(148,163,184,0.22);
-  background: rgba(255,255,255,0.8);
-}
-
-#svgContainer svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-height: 300px;
-}
-
-#questionArea {
-  min-height: 110px;
-}
-
-#questionArea p {
-  margin: 0 0 16px;
-  line-height: 1.7;
-  color: var(--text);
-  font-size: 1rem;
-}
-
-.choice-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.choice-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  background: rgba(255,255,255,0.6);
-  border: 1px solid rgba(255,255,255,0.58);
-  cursor: pointer;
-}
-
-.choice-item.selected {
-  background: rgba(0,122,255,0.08);
-  border-color: rgba(0,122,255,0.38);
-}
-
-.choice-radio {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid rgba(15,23,42,0.22);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.choice-item.selected .choice-radio {
-  border-color: var(--primary);
-}
-
-.choice-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--primary);
-  display: none;
-}
-
-.choice-item.selected .choice-dot {
-  display: block;
-}
-
-.choice-text {
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.sort-container {
-  background: rgba(255,255,255,0.55);
-  border: 1px solid rgba(255,255,255,0.56);
-  border-radius: 20px;
-  overflow: hidden;
-}
-
-.sort-slot {
-  min-height: 78px;
-  padding: 14px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  background: rgba(255,255,255,0.24);
-  border-bottom: 1px solid rgba(148,163,184,0.18);
-}
-
-.sort-empty {
-  width: 100%;
-  text-align: center;
-  color: rgba(15,23,42,0.46);
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.sort-token {
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #007aff, #4f80ff);
-  color: white;
-  font-weight: 800;
-  border: none;
-}
-
-.sort-pool {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 14px;
-}
-
-.sort-option {
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(148,163,184,0.3);
-  background: rgba(255,255,255,0.72);
-  color: var(--ink);
-  font-weight: 700;
-}
-
-.nav-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 2px;
-}
-
-.nav-row .nav {
-  flex: 1;
-}
-
-.nav-row .submit {
-  flex: 2;
-}
-
-.score-card {
-  text-align: center;
-  padding: 28px 18px;
-}
-
-.score-label {
-  font-size: 0.8rem;
-  letter-spacing: 0.18em;
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.score-display {
-  margin-top: 8px;
-  font-size: clamp(3rem, 9vw, 5.2rem);
-  font-weight: 900;
-  letter-spacing: -0.08em;
-  color: var(--ink);
-}
-
-.score-max {
-  font-size: 1.2rem;
-  color: rgba(15,23,42,0.4);
-  margin-left: 8px;
-}
-
-.result-list-card {
-  padding: 0;
-  overflow: hidden;
-}
-
-.result-title {
-  padding: 16px 18px;
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: var(--muted);
-  border-bottom: 1px solid rgba(255,255,255,0.46);
-}
-
-.result-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.result-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 18px;
-  border-bottom: 1px solid rgba(255,255,255,0.38);
-  font-weight: 800;
-  color: var(--ink);
-}
-
-.result-item:last-child {
-  border-bottom: 0;
-}
-
-.result-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  font-size: 1.1rem;
-}
-
-.login-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(224,233,255,0.54);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  z-index: 80;
-}
-
-.login-box {
-  width: min(420px, 92vw);
-  border-radius: 32px;
-  padding: 28px 24px 22px;
-  text-align: center;
-}
-
-.login-mark {
-  margin: 0 auto 18px;
-  width: 62px;
-  height: 62px;
-  font-size: 1.5rem;
-}
-
-.login-box h1 {
-  margin: 0;
-  font-size: clamp(1.8rem, 4vw, 2.2rem);
-  letter-spacing: -0.06em;
-}
-
-.login-box p {
-  margin: 8px 0 22px;
-  color: var(--muted);
-  font-size: 0.76rem;
-}
-
-#userIdInput {
-  width: 100%;
-  min-height: 52px;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.62);
-  border: 1px solid rgba(255,255,255,0.7);
-  text-align: center;
-  font-weight: 800;
-  color: var(--ink);
-  margin-bottom: 16px;
-}
-
-#userIdInput:focus {
-  outline: 2px solid rgba(0,122,255,0.26);
-}
-
-.hidden {
-  display: none !important;
-}
-
-.modal {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  display: flex;
-  align-items: end;
-  justify-content: center;
-}
-
-.modal-bg {
-  position: absolute;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.32);
-  opacity: 0;
-  transition: opacity 0.24s ease;
-}
-
-.modal-sheet {
-  position: relative;
-  z-index: 1;
-  width: min(720px, calc(100% - 14px));
-  max-height: 82dvh;
-  background: rgba(255,255,255,0.74);
-  border: 1px solid rgba(255,255,255,0.66);
-  backdrop-filter: blur(22px) saturate(1.15);
-  -webkit-backdrop-filter: blur(22px) saturate(1.15);
-  border-radius: 24px 24px 0 0;
-  transform: translateY(calc(100% + 24px));
-  transition: transform 0.32s ease;
-  overflow: hidden;
-}
-
-.modal.open .modal-sheet {
-  transform: translateY(0);
-}
-
-.modal.open .modal-bg {
-  opacity: 1;
-}
-
-.sheet-top {
-  padding: 12px 16px 10px;
-  border-bottom: 1px solid rgba(148,163,184,0.12);
-}
-
-.sheet-handle {
-  width: 38px;
-  height: 4px;
-  margin: 0 auto 12px;
-  border-radius: 999px;
-  background: rgba(15,23,42,0.18);
-}
-
-.sheet-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.sheet-header-row h3 {
-  margin: 0;
-  font-size: 1.06rem;
-}
-
-.sheet-header-left {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.review-icon {
-  font-size: 1.15rem;
-}
-
-.review-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: rgba(255,255,255,0.32);
-  border-bottom: 1px solid rgba(148,163,184,0.12);
-}
-
-.review-area {
-  padding: 18px 16px 24px;
-  overflow-y: auto;
-  max-height: calc(82dvh - 126px);
-}
-
-.review-card {
-  background: rgba(255,255,255,0.45);
-  border: 1px solid rgba(148,163,184,0.18);
-  border-radius: 20px;
-  padding: 16px;
-  margin-bottom: 18px;
-}
-
-.review-answers {
-  display: grid;
-  gap: 12px;
-}
-
-.answer-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 10px 12px;
-  border-radius: 12px;
-  font-weight: 800;
-  border: 1px solid rgba(148,163,184,0.18);
-}
-
-.answer-chip.correct {
-  color: var(--success);
-  background: rgba(52, 199, 89, 0.08);
-  border-color: rgba(52, 199, 89, 0.28);
-}
-
-.answer-chip.wrong {
-  color: var(--danger);
-  background: rgba(255, 59, 48, 0.08);
-  border-color: rgba(255, 59, 48, 0.24);
-}
-
-.answer-chip.neutral {
-  color: var(--ink);
-  background: rgba(255,255,255,0.7);
-}
-
-.review-line {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  margin-bottom: 14px;
-}
-
-.review-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: rgba(0,122,255,0.08);
-  color: var(--primary);
-  font-weight: 900;
-  font-size: 0.8rem;
-  flex-shrink: 0;
-}
-
-.review-bubble {
-  flex: 1;
-  border-radius: 16px;
-  border: 1px solid rgba(148,163,184,0.16);
-  background: rgba(255,255,255,0.68);
-  padding: 12px 14px;
-  cursor: pointer;
-}
-
-.review-bubble.active {
-  background: rgba(255,176,32,0.1);
-  border-color: rgba(255,176,32,0.34);
-}
-
-.review-bubble .en {
-  margin: 0;
-  font-weight: 700;
-  color: var(--ink);
-  line-height: 1.6;
-}
-
-.review-bubble .ja {
-  margin: 6px 0 0;
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-
-.settings-sheet {
-  width: min(540px, calc(100% - 14px));
-}
-
-.settings-inner {
-  padding: 16px 18px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.setting-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.setting-title {
-  font-weight: 800;
-  font-size: 0.92rem;
-}
-
-.slider-row {
-  margin-top: 4px;
-}
-
-#settingSpeed {
-  width: 100%;
-  accent-color: var(--primary);
-}
-
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 52px;
-  height: 30px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: rgba(148,163,184,0.4);
-  transition: 0.2s ease;
-}
-
-.slider::before {
-  content: "";
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  left: 4px;
-  top: 4px;
-  border-radius: 50%;
-  background: white;
-  box-shadow: 0 1px 3px rgba(15,23,42,0.14);
-  transition: 0.2s ease;
-}
-
-.switch input:checked + .slider {
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
-}
-
-.switch input:checked + .slider::before {
-  transform: translateX(22px);
-}
-
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: calc(28px + var(--safe-bottom));
-  transform: translateX(-50%);
-  z-index: 120;
-  background: rgba(15,23,42,0.82);
-  color: white;
-  border-radius: 999px;
-  padding: 10px 16px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.24);
-}
-
-.toast.show {
-  display: inline-block;
-}
-
-@media (max-width: 560px) {
-  .topbar {
-    align-items: flex-start;
-    flex-direction: column;
-    padding: 12px 12px;
+(() => {
+  const elements = {
+    startView: document.getElementById('viewStart'),
+    examView: document.getElementById('viewExam'),
+    resultView: document.getElementById('viewResult'),
+    dataInput: document.getElementById('dataInput'),
+    pasteBtn: document.getElementById('pasteBtn'),
+    startTestBtn: document.getElementById('startTestBtn'),
+    examTitleDisplay: document.getElementById('examTitleDisplay'),
+    questionCounter: document.getElementById('questionCounter'),
+    sequencerProgress: document.getElementById('sequencerProgress'),
+    sequencerState: document.getElementById('sequencerState'),
+    sequencerMessage: document.getElementById('sequencerMessage'),
+    masterPlayBtn: document.getElementById('masterPlayBtn'),
+    questionArea: document.getElementById('questionArea'),
+    prevQBtn: document.getElementById('prevQBtn'),
+    nextQBtn: document.getElementById('nextQBtn'),
+    submitTestBtn: document.getElementById('submitTestBtn'),
+    scoreDisplay: document.getElementById('scoreDisplay'),
+    resultList: document.getElementById('resultList'),
+    returnTopBtn: document.getElementById('returnTopBtn'),
+    toggleDoubtBtn: document.getElementById('toggleDoubtBtn'),
+    homeBtn: document.getElementById('homeBtn'),
+    loginOverlay: document.getElementById('loginOverlay'),
+    userIdInput: document.getElementById('userIdInput'),
+    loginBtn: document.getElementById('loginBtn'),
+    accountStatusPill: document.getElementById('accountStatusPill'),
+    planDisplay: document.getElementById('planDisplay'),
+    creditDisplay: document.getElementById('creditDisplay'),
+    settingsBtn: document.getElementById('settingsBtn'),
+    logoutBtn: document.getElementById('logoutBtn'),
+    saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+    settingAutoLogin: document.getElementById('settingAutoLogin'),
+    settingSpeed: document.getElementById('settingSpeed'),
+    settingSpeedVal: document.getElementById('settingSpeedVal'),
+    globalSpeed: document.getElementById('globalSpeed'),
+    globalSpeedVal: document.getElementById('globalSpeedVal'),
+    settingsModal: document.getElementById('settingsModal'),
+    closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+    reviewModal: document.getElementById('reviewModal'),
+    reviewModalTitle: document.getElementById('reviewModalTitle'),
+    reviewModalIcon: document.getElementById('reviewModalIcon'),
+    reviewScriptArea: document.getElementById('reviewScriptArea'),
+    closeReviewBtn: document.getElementById('closeReviewBtn'),
+    reviewPlayAllBtn: document.getElementById('reviewPlayAllBtn'),
+    toast: document.getElementById('toast')
+  };
+
+  const STORAGE = {
+    userId: 'listening_pro_user_id',
+    autoLogin: 'listening_pro_auto_login',
+    speed: 'listening_pro_speed',
+    settings: 'listening_pro_settings'
+  };
+
+  const DEFAULT_QUESTIONS = [
+    {
+      prompt: 'Good morning. I would like a coffee and a sandwich, please.',
+      choices: [
+        'A coffee and a sandwich, please.',
+        'I am leaving now.',
+        'The train is late.',
+        'I do not like tea.'
+      ],
+      answerIndex: 0,
+      explanation: 'This is the most natural response to a café order.'
+    },
+    {
+      prompt: 'Could you repeat that more slowly?',
+      choices: [
+        'Sure, I can say it again more slowly.',
+        'It is already very fast.',
+        'I am in the bus station.',
+        'We should leave now.'
+      ],
+      answerIndex: 0,
+      explanation: 'The response politely asks for slower speech.'
+    },
+    {
+      prompt: 'I am running 10 minutes late because of traffic.',
+      choices: [
+        'I am sorry, I am delayed by traffic.',
+        'Please bring me the menu.',
+        'I will call you tomorrow.',
+        'This is my favorite book.'
+      ],
+      answerIndex: 0,
+      explanation: 'It naturally acknowledges the delay and the reason.'
+    },
+    {
+      prompt: 'Please check the battery level before we leave.',
+      choices: [
+        'Let us confirm the battery level first.',
+        'The weather is sunny today.',
+        'I cannot hear anything.',
+        'The meeting is at midnight.'
+      ],
+      answerIndex: 0,
+      explanation: 'This is the correct summary of the instruction.'
+    }
+  ];
+
+  const state = {
+    userId: localStorage.getItem(STORAGE.userId) || 'guest',
+    autoLogin: localStorage.getItem(STORAGE.autoLogin) !== 'false',
+    speed: Number(localStorage.getItem(STORAGE.speed) || '1.0'),
+    questions: [],
+    currentIndex: 0,
+    answers: [],
+    doubtFlags: [],
+    score: 0,
+    userPlan: 'Free',
+    credits: 20,
+    loadedUsers: new Map()
+  };
+
+  const clampSpeed = (value) => Math.min(1.8, Math.max(0.7, Number(value) || 1));
+
+  function showToast(message) {
+    const toast = elements.toast;
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 1800);
   }
 
-  .top-controls {
-    width: 100%;
-    justify-content: space-between;
+  function setSpeedValue(value, persist = false) {
+    const safe = clampSpeed(value);
+    state.speed = safe;
+    localStorage.setItem(STORAGE.speed, String(safe));
+
+    if (elements.globalSpeed) elements.globalSpeed.value = String(safe);
+    if (elements.settingSpeed) elements.settingSpeed.value = String(safe);
+    if (elements.globalSpeedVal) elements.globalSpeedVal.textContent = `${safe.toFixed(1)}x`;
+    if (elements.settingSpeedVal) elements.settingSpeedVal.textContent = `${safe.toFixed(1)}x`;
+
+    if (persist) {
+      try {
+        const settings = JSON.parse(localStorage.getItem(STORAGE.settings) || '{}');
+        settings.defaultSpeed = safe;
+        localStorage.setItem(STORAGE.settings, JSON.stringify(settings));
+      } catch {}
+    }
   }
 
-  .brand-wrap {
-    width: 100%;
+  function setView(viewName) {
+    const map = { start: elements.startView, exam: elements.examView, result: elements.resultView };
+    Object.entries(map).forEach(([name, node]) => {
+      if (node) node.classList.toggle('hidden', name !== viewName);
+    });
   }
 
-  .speed-group {
-    flex: 1 1 auto;
-    justify-content: space-between;
+  function updateAccountStatus() {
+    const pill = elements.accountStatusPill;
+    const plan = state.userPlan || 'Free';
+    const credits = Number(state.credits || 0);
+
+    if (elements.planDisplay) elements.planDisplay.textContent = plan;
+    if (elements.creditDisplay) elements.creditDisplay.textContent = String(credits);
+    if (pill) pill.classList.toggle('hidden', !state.userId || !state.userId.trim() || state.userId === 'guest');
   }
 
-  .user-pill {
-    font-size: 0.72rem;
-    padding: 7px 10px;
+  function parseCsvLine(line) {
+    const cells = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i += 1) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i += 1;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        cells.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    cells.push(current.trim());
+    return cells;
   }
 
-  .review-area {
-    max-height: calc(82dvh - 120px);
+  function normalizePlan(value) {
+    const plan = String(value || 'Free').trim();
+    return plan || 'Free';
   }
-}
+
+  async function loadUsersCsv() {
+    try {
+      const response = await fetch('./data/users.csv', { cache: 'no-store' });
+      if (!response.ok) return;
+      const text = await response.text();
+      const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
+      if (!lines.length) return;
+
+      const headers = parseCsvLine(lines[0]).map((cell) => cell.trim().toLowerCase());
+      const idIndex = headers.indexOf('id');
+      const creditsIndex = headers.findIndex((cell) => ['credits', 'credit'].includes(cell));
+      const planIndex = headers.findIndex((cell) => ['plan', 'tier'].includes(cell));
+
+      if (idIndex === -1) return;
+
+      for (let i = 1; i < lines.length; i += 1) {
+        const cells = parseCsvLine(lines[i]);
+        const rawId = (cells[idIndex] || '').trim();
+        if (!rawId) continue;
+
+        const credits = Number(cells[creditsIndex] || '0');
+        const plan = normalizePlan(cells[planIndex] || 'Free');
+        state.loadedUsers.set(rawId, {
+          credits: Number.isFinite(credits) ? credits : 0,
+          plan
+        });
+      }
+    } catch (error) {
+      console.warn('Could not load users.csv', error);
+    }
+  }
+
+  function validateInput() {
+    const value = (elements.dataInput?.value || '').trim();
+    const isReady = !!value;
+    if (elements.startTestBtn) {
+      elements.startTestBtn.disabled = !isReady;
+      elements.startTestBtn.classList.toggle('disabled', !isReady);
+    }
+  }
+
+  function loginUser(rawId) {
+    const userId = String(rawId || '').trim();
+    if (!userId) {
+      showToast('IDを入力してください');
+      return;
+    }
+
+    const userRecord = state.loadedUsers.get(userId) || { credits: 20, plan: 'Free' };
+    state.userId = userId;
+    state.userPlan = userRecord.plan || 'Free';
+    state.credits = Number(userRecord.credits || 0);
+
+    localStorage.setItem(STORAGE.userId, userId);
+    if (elements.userIdInput) elements.userIdInput.value = userId;
+    updateAccountStatus();
+    if (elements.loginOverlay) elements.loginOverlay.classList.add('hidden');
+    showToast(`ようこそ、${userId} さん`);
+  }
+
+  function logoutUser() {
+    state.userId = 'guest';
+    state.userPlan = 'Free';
+    state.credits = 20;
+    localStorage.removeItem(STORAGE.userId);
+    if (elements.userIdInput) elements.userIdInput.value = '';
+    updateAccountStatus();
+    if (elements.loginOverlay) elements.loginOverlay.classList.remove('hidden');
+    showToast('ログアウトしました');
+  }
+
+  function decodeBase64Maybe(value) {
+    try {
+      const normalized = value.replace(/\s+/g, '');
+      if (!normalized || !/^[A-Za-z0-9+/=]+$/.test(normalized)) return null;
+      return atob(normalized);
+    } catch {
+      return null;
+    }
+  }
+
+  function buildQuestionsFromSource(rawText) {
+    const cleaned = String(rawText || '').trim();
+    if (!cleaned) {
+      return DEFAULT_QUESTIONS.map((question, index) => ({
+        ...question,
+        prompt: `${index + 1}. ${question.prompt}`
+      }));
+    }
+
+    const base64Text = decodeBase64Maybe(cleaned);
+    const text = (base64Text && base64Text.trim()) ? base64Text : cleaned;
+    const lines = text
+      .split(/\r?\n|\.|\?|!|\u3002|\uff1f|\uff01/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .slice(0, 8);
+
+    if (!lines.length) return DEFAULT_QUESTIONS;
+
+    return lines.map((sentence, index) => {
+      const safeSentence = sentence.replace(/\s+/g, ' ');
+      const choices = [
+        safeSentence,
+        index % 2 === 0 ? 'Please wait for a moment.' : 'Could you say that again?',
+        index % 3 === 0 ? 'I am not sure.' : 'Let us continue.',
+        index % 4 === 0 ? 'That sounds correct.' : 'I understand now.'
+      ];
+
+      return {
+        prompt: safeSentence,
+        choices: choices.slice(0, 4),
+        answerIndex: 0,
+        explanation: 'この文は入力された音声テキストから生成されました。'
+      };
+    });
+  }
+
+  function renderQuestion() {
+    const question = state.questions[state.currentIndex];
+    if (!question) return;
+
+    if (elements.questionArea) elements.questionArea.innerHTML = '';
+
+    const prompt = document.createElement('p');
+    prompt.textContent = question.prompt;
+    if (elements.questionArea) elements.questionArea.appendChild(prompt);
+
+    const list = document.createElement('div');
+    list.className = 'choice-list';
+
+    question.choices.forEach((choice, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'choice-item';
+      if (state.answers[state.currentIndex] === index) button.classList.add('selected');
+
+      const radio = document.createElement('span');
+      radio.className = 'choice-radio';
+      const dot = document.createElement('span');
+      dot.className = 'choice-dot';
+      radio.appendChild(dot);
+
+      const text = document.createElement('span');
+      text.className = 'choice-text';
+      text.textContent = choice;
+
+      button.appendChild(radio);
+      button.appendChild(text);
+      button.addEventListener('click', () => {
+        state.answers[state.currentIndex] = index;
+        renderQuestion();
+      });
+      list.appendChild(button);
+    });
+
+    if (elements.questionArea) elements.questionArea.appendChild(list);
+
+    const current = state.currentIndex + 1;
+    const total = state.questions.length;
+    if (elements.questionCounter) elements.questionCounter.textContent = `${current}/${total}`;
+    if (elements.sequencerProgress) elements.sequencerProgress.style.width = `${((current / total) * 100) || 0}%`;
+    if (elements.sequencerState) elements.sequencerState.textContent = 'ACTIVE';
+    if (elements.sequencerMessage) elements.sequencerMessage.textContent = `▶️ 問題 ${current} / ${total}`;
+
+    const hasAnswer = Number.isInteger(state.answers[state.currentIndex]);
+    if (elements.submitTestBtn) elements.submitTestBtn.classList.toggle('hidden', current < total || !hasAnswer);
+    if (elements.nextQBtn) elements.nextQBtn.textContent = state.currentIndex === total - 1 ? '終了' : '次へ ▶';
+    if (elements.prevQBtn) elements.prevQBtn.disabled = state.currentIndex === 0;
+    if (elements.toggleDoubtBtn) {
+      elements.toggleDoubtBtn.classList.toggle('active', !!state.doubtFlags[state.currentIndex]);
+      elements.toggleDoubtBtn.setAttribute('aria-label', state.doubtFlags[state.currentIndex] ? '疑問あり' : '疑問なし');
+    }
+  }
+
+  function playText(text) {
+    if (!('speechSynthesis' in window)) {
+      showToast('この端末では音声再生が利用できません');
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = state.speed;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    utterance.onend = () => {
+      if (elements.sequencerState) elements.sequencerState.textContent = 'READY';
+      if (elements.sequencerMessage) elements.sequencerMessage.textContent = '▶️ 音声を再生して開始';
+    };
+    if (elements.sequencerState) elements.sequencerState.textContent = 'PLAYING';
+    if (elements.sequencerMessage) elements.sequencerMessage.textContent = '▶️ 再生中';
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function startExamFromText(rawText) {
+    const questions = buildQuestionsFromSource(rawText);
+    state.questions = questions;
+    state.answers = new Array(questions.length).fill(undefined);
+    state.doubtFlags = new Array(questions.length).fill(false);
+    state.currentIndex = 0;
+    state.score = 0;
+
+    if (elements.examTitleDisplay) elements.examTitleDisplay.textContent = 'Listening Test';
+    setView('exam');
+    renderQuestion();
+    if (questions.length) playText(questions[0].prompt);
+  }
+
+  function handleNextQuestion() {
+    if (state.currentIndex < state.questions.length - 1) {
+      state.currentIndex += 1;
+      renderQuestion();
+      return;
+    }
+
+    const answeredCount = state.answers.filter((answer) => Number.isInteger(answer)).length;
+    if (answeredCount !== state.questions.length) {
+      showToast('すべての問題に回答してください');
+      return;
+    }
+
+    submitTest();
+  }
+
+  function handlePreviousQuestion() {
+    if (state.currentIndex > 0) {
+      state.currentIndex -= 1;
+      renderQuestion();
+    }
+  }
+
+  function submitTest() {
+    const total = state.questions.length || 1;
+    let correct = 0;
+
+    state.questions.forEach((question, index) => {
+      if (state.answers[index] === question.answerIndex) correct += 1;
+    });
+
+    state.score = Math.round((correct / total) * 100);
+    if (elements.scoreDisplay) elements.scoreDisplay.textContent = String(state.score);
+
+    if (elements.resultList) elements.resultList.innerHTML = '';
+    state.questions.forEach((question, index) => {
+      const item = document.createElement('li');
+      item.className = 'result-item';
+      item.innerHTML = `
+        <span class="result-icon">${state.answers[index] === question.answerIndex ? '✅' : '❌'}</span>
+        <span>Q${index + 1}</span>
+      `;
+      item.addEventListener('click', () => openReviewModal(index));
+      if (elements.resultList) elements.resultList.appendChild(item);
+    });
+
+    setView('result');
+    showToast(`採点結果: ${state.score} 点`);
+  }
+
+  function openReviewModal(startIndex = 0) {
+    const modal = elements.reviewModal;
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('open');
+
+    if (elements.reviewModalTitle) elements.reviewModalTitle.textContent = '復習';
+    if (elements.reviewModalIcon) elements.reviewModalIcon.textContent = '◯';
+
+    const reviewMarkup = state.questions
+      .map((question, index) => {
+        const chosen = state.answers[index];
+        const isCorrect = chosen === question.answerIndex;
+        const statusClass = isCorrect ? 'correct' : chosen === undefined ? 'neutral' : 'wrong';
+        const chosenLabel = Number.isInteger(chosen) ? question.choices[chosen] : '未回答';
+        const correctLabel = question.choices[question.answerIndex];
+
+        return `
+          <div class="review-card">
+            <div class="review-answers">
+              <div class="answer-chip ${statusClass}">
+                ${isCorrect ? '正解' : chosen === undefined ? '未回答' : '不正解'}
+              </div>
+              <div class="answer-chip neutral">あなたの回答: ${chosenLabel}</div>
+              <div class="answer-chip correct">正解: ${correctLabel}</div>
+            </div>
+            <div class="review-line">
+              <div class="review-avatar">Q${index + 1}</div>
+              <div class="review-bubble ${index === startIndex ? 'active' : ''}">
+                <p class="en">${question.prompt}</p>
+                <p class="ja">${question.explanation}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+
+    if (elements.reviewScriptArea) elements.reviewScriptArea.innerHTML = reviewMarkup;
+  }
+
+  function closeReviewModal() {
+    if (elements.reviewModal) {
+      elements.reviewModal.classList.remove('open');
+      setTimeout(() => elements.reviewModal.classList.add('hidden'), 260);
+    }
+  }
+
+  function toggleDoubt() {
+    const current = state.currentIndex;
+    state.doubtFlags[current] = !state.doubtFlags[current];
+    renderQuestion();
+  }
+
+  function resetToStart() {
+    state.questions = [];
+    state.answers = [];
+    state.doubtFlags = [];
+    setView('start');
+    if (elements.dataInput) elements.dataInput.value = '';
+    validateInput();
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast('ホームに戻りました');
+  }
+
+  function setupControls() {
+    if (elements.startTestBtn) {
+      elements.startTestBtn.disabled = true;
+      elements.startTestBtn.classList.add('disabled');
+      elements.startTestBtn.addEventListener('click', () => {
+        if (elements.startTestBtn.classList.contains('disabled')) return;
+        startExamFromText(elements.dataInput.value);
+      });
+    }
+
+    if (elements.dataInput) {
+      elements.dataInput.addEventListener('input', validateInput);
+    }
+
+    if (elements.homeBtn) {
+      elements.homeBtn.addEventListener('click', resetToStart);
+    }
+
+    if (elements.pasteBtn) {
+      elements.pasteBtn.addEventListener('click', async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          if (elements.dataInput) elements.dataInput.value = text;
+          validateInput();
+        } catch {
+          showToast('クリップボードの読み取りに失敗しました');
+        }
+      });
+    }
+
+    if (elements.prevQBtn) elements.prevQBtn.addEventListener('click', handlePreviousQuestion);
+    if (elements.nextQBtn) elements.nextQBtn.addEventListener('click', handleNextQuestion);
+    if (elements.submitTestBtn) elements.submitTestBtn.addEventListener('click', submitTest);
+    if (elements.masterPlayBtn) elements.masterPlayBtn.addEventListener('click', () => {
+      const question = state.questions[state.currentIndex];
+      if (question) playText(question.prompt);
+    });
+    if (elements.toggleDoubtBtn) elements.toggleDoubtBtn.addEventListener('click', toggleDoubt);
+    if (elements.returnTopBtn) elements.returnTopBtn.addEventListener('click', resetToStart);
+
+    if (elements.loginBtn) elements.loginBtn.addEventListener('click', () => loginUser(elements.userIdInput.value));
+    if (elements.userIdInput) {
+      elements.userIdInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') loginUser(elements.userIdInput.value);
+      });
+    }
+
+    if (elements.settingsBtn) {
+      elements.settingsBtn.addEventListener('click', () => {
+        if (elements.settingsModal) {
+          elements.settingsModal.classList.remove('hidden');
+          elements.settingsModal.classList.add('open');
+        }
+      });
+    }
+
+    if (elements.closeSettingsBtn) {
+      elements.closeSettingsBtn.addEventListener('click', () => {
+        if (elements.settingsModal) {
+          elements.settingsModal.classList.remove('open');
+          setTimeout(() => elements.settingsModal.classList.add('hidden'), 260);
+        }
+      });
+    }
+
+    if (elements.closeReviewBtn) elements.closeReviewBtn.addEventListener('click', closeReviewModal);
+    if (elements.reviewModal) {
+      elements.reviewModal.addEventListener('click', (event) => {
+        if (event.target === elements.reviewModal) closeReviewModal();
+      });
+    }
+
+    if (elements.reviewPlayAllBtn) {
+      elements.reviewPlayAllBtn.addEventListener('click', () => {
+        const fullScript = state.questions.map((question) => question.prompt).join('. ');
+        playText(fullScript);
+      });
+    }
+
+    if (elements.logoutBtn) elements.logoutBtn.addEventListener('click', logoutUser);
+    if (elements.saveSettingsBtn) {
+      elements.saveSettingsBtn.addEventListener('click', () => {
+        state.autoLogin = !!elements.settingAutoLogin.checked;
+        localStorage.setItem(STORAGE.autoLogin, String(state.autoLogin));
+        setSpeedValue(elements.settingSpeed.value, true);
+        if (elements.settingsModal) {
+          elements.settingsModal.classList.remove('open');
+          setTimeout(() => elements.settingsModal.classList.add('hidden'), 260);
+        }
+        showToast('設定を保存しました');
+      });
+    }
+
+    if (elements.globalSpeed) {
+      elements.globalSpeed.addEventListener('input', (event) => setSpeedValue(event.target.value, true));
+    }
+
+    if (elements.settingSpeed) {
+      elements.settingSpeed.addEventListener('input', (event) => {
+        const value = Number(event.target.value);
+        setSpeedValue(value, true);
+      });
+    }
+
+    if (elements.settingAutoLogin) elements.settingAutoLogin.checked = state.autoLogin;
+    setSpeedValue(state.speed, false);
+  }
+
+  async function initialize() {
+    await loadUsersCsv();
+
+    const savedUserId = localStorage.getItem(STORAGE.userId);
+    if (savedUserId && savedUserId.trim() && savedUserId !== 'guest') {
+      state.userId = savedUserId.trim();
+      const userRecord = state.loadedUsers.get(state.userId) || { credits: 20, plan: 'Free' };
+      state.userPlan = userRecord.plan || 'Free';
+      state.credits = Number(userRecord.credits || 0);
+      if (elements.userIdInput) elements.userIdInput.value = state.userId;
+      if (elements.loginOverlay) elements.loginOverlay.classList.add('hidden');
+    } else {
+      state.userId = 'guest';
+      state.userPlan = 'Free';
+      state.credits = 20;
+      if (elements.loginOverlay) elements.loginOverlay.classList.remove('hidden');
+    }
+
+    updateAccountStatus();
+    if (elements.settingsBtn) elements.settingsBtn.classList.toggle('hidden', !state.userId || state.userId === 'guest');
+    if (elements.logoutBtn) elements.logoutBtn.classList.toggle('hidden', !state.userId || state.userId === 'guest');
+    if (elements.accountStatusPill) elements.accountStatusPill.classList.remove('hidden');
+
+    setupControls();
+    setView('start');
+    validateInput();
+    showToast('Listening Pro を起動しました');
+  }
+
+  initialize();
+})();
