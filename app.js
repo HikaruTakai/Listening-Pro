@@ -45,6 +45,13 @@
     toast: document.getElementById('toast')
   };
 
+  const STORAGE = {
+    userId: 'listening_pro_user_id',
+    autoLogin: 'listening_pro_auto_login',
+    speed: 'listening_pro_speed',
+    settings: 'listening_pro_settings'
+  };
+
   const DEFAULT_QUESTIONS = [
     {
       prompt: 'Good morning. I would like a coffee and a sandwich, please.',
@@ -93,9 +100,9 @@
   ];
 
   const state = {
-    userId: localStorage.getItem('listeningProUserId') || 'guest',
-    autoLogin: localStorage.getItem('listeningProAutoLogin') !== 'false',
-    speed: Number(localStorage.getItem('listeningProSpeed') || '1.0'),
+    userId: localStorage.getItem(STORAGE.userId) || 'guest',
+    autoLogin: localStorage.getItem(STORAGE.autoLogin) !== 'false',
+    speed: Number(localStorage.getItem(STORAGE.speed) || '1.0'),
     questions: [],
     currentIndex: 0,
     answers: [],
@@ -106,34 +113,42 @@
     loadedUsers: new Map()
   };
 
-  function setSpeedValue(value) {
-    const safe = Math.min(1.8, Math.max(0.7, Number(value) || 1));
-    state.speed = safe;
-    localStorage.setItem('listeningProSpeed', String(safe));
-    elements.globalSpeed.value = String(safe);
-    elements.settingSpeed.value = String(safe);
-    elements.globalSpeedVal.textContent = `${safe.toFixed(1)}x`;
-    elements.settingSpeedVal.textContent = `${safe.toFixed(1)}x`;
-  }
+  const clampSpeed = (value) => Math.min(1.8, Math.max(0.7, Number(value) || 1));
 
   function showToast(message) {
-    elements.toast.textContent = message;
-    elements.toast.classList.add('show');
-    clearTimeout(showToast._timer);
-    showToast._timer = setTimeout(() => {
-      elements.toast.classList.remove('show');
+    const toast = elements.toast;
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => {
+      toast.classList.remove('show');
     }, 1800);
   }
 
-  function setView(viewName) {
-    const map = {
-      start: elements.startView,
-      exam: elements.examView,
-      result: elements.resultView
-    };
+  function setSpeedValue(value, persist = false) {
+    const safe = clampSpeed(value);
+    state.speed = safe;
+    localStorage.setItem(STORAGE.speed, String(safe));
 
+    if (elements.globalSpeed) elements.globalSpeed.value = String(safe);
+    if (elements.settingSpeed) elements.settingSpeed.value = String(safe);
+    if (elements.globalSpeedVal) elements.globalSpeedVal.textContent = `${safe.toFixed(1)}x`;
+    if (elements.settingSpeedVal) elements.settingSpeedVal.textContent = `${safe.toFixed(1)}x`;
+
+    if (persist) {
+      try {
+        const settings = JSON.parse(localStorage.getItem(STORAGE.settings) || '{}');
+        settings.defaultSpeed = safe;
+        localStorage.setItem(STORAGE.settings, JSON.stringify(settings));
+      } catch {}
+    }
+  }
+
+  function setView(viewName) {
+    const map = { start: elements.startView, exam: elements.examView, result: elements.resultView };
     Object.entries(map).forEach(([name, node]) => {
-      node.classList.toggle('hidden', name !== viewName);
+      if (node) node.classList.toggle('hidden', name !== viewName);
     });
   }
 
@@ -142,10 +157,9 @@
     const plan = state.userPlan || 'Free';
     const credits = Number(state.credits || 0);
 
-    elements.planDisplay.textContent = plan;
-    elements.creditDisplay.textContent = String(credits);
-
-    pill.classList.toggle('hidden', !state.userId || !state.userId.trim());
+    if (elements.planDisplay) elements.planDisplay.textContent = plan;
+    if (elements.creditDisplay) elements.creditDisplay.textContent = String(credits);
+    if (pill) pill.classList.toggle('hidden', !state.userId || !state.userId.trim() || state.userId === 'guest');
   }
 
   function parseCsvLine(line) {
@@ -163,47 +177,67 @@
           inQuotes = !inQuotes;
         }
       } else if (char === ',' && !inQuotes) {
-        cells.push(current);
+        cells.push(current.trim());
         current = '';
       } else {
         current += char;
       }
     }
 
-    cells.push(current);
-    return cells.map((cell) => cell.trim());
+    cells.push(current.trim());
+    return cells;
+  }
+
+  function normalizePlan(value) {
+    const plan = String(value || 'Free').trim();
+    return plan || 'Free';
   }
 
   async function loadUsersCsv() {
     try {
-      const response = await fetch('./data/users.csv');
+      const response = await fetch('./data/users.csv', { cache: 'no-store' });
       if (!response.ok) return;
       const text = await response.text();
-      const lines = text.split(/\r?\n/).filter(Boolean);
-      const headers = parseCsvLine(lines[0] || '');
-      const indexById = headers.indexOf('ID');
-      const indexByCredits = headers.indexOf('Credits');
-      const indexByPlan = headers.indexOf('Plan');
+      const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
+      if (!lines.length) return;
 
-      if (indexById === -1) return;
+      const headers = parseCsvLine(lines[0]).map((cell) => cell.trim().toLowerCase());
+      const idIndex = headers.indexOf('id');
+      const creditsIndex = headers.findIndex((cell) => ['credits', 'credit'].includes(cell));
+      const planIndex = headers.findIndex((cell) => ['plan', 'tier'].includes(cell));
+
+      if (idIndex === -1) return;
 
       for (let i = 1; i < lines.length; i += 1) {
         const cells = parseCsvLine(lines[i]);
-        const id = cells[indexById] || '';
-        if (!id) continue;
-        const credits = Number(cells[indexByCredits] || '0');
-        const plan = (cells[indexByPlan] || 'Free').trim() || 'Free';
-        state.loadedUsers.set(id, { credits, plan });
+        const rawId = (cells[idIndex] || '').trim();
+        if (!rawId) continue;
+
+        const credits = Number(cells[creditsIndex] || '0');
+        const plan = normalizePlan(cells[planIndex] || 'Free');
+        state.loadedUsers.set(rawId, {
+          credits: Number.isFinite(credits) ? credits : 0,
+          plan
+        });
       }
     } catch (error) {
       console.warn('Could not load users.csv', error);
     }
   }
 
+  function validateInput() {
+    const value = (elements.dataInput?.value || '').trim();
+    const isReady = !!value;
+    if (elements.startTestBtn) {
+      elements.startTestBtn.disabled = !isReady;
+      elements.startTestBtn.classList.toggle('disabled', !isReady);
+    }
+  }
+
   function loginUser(rawId) {
     const userId = String(rawId || '').trim();
     if (!userId) {
-      showToast('ユーザーIDを入力してください');
+      showToast('IDを入力してください');
       return;
     }
 
@@ -212,10 +246,12 @@
     state.userPlan = userRecord.plan || 'Free';
     state.credits = Number(userRecord.credits || 0);
 
-    localStorage.setItem('listeningProUserId', userId);
-    elements.userIdInput.value = userId;
+    localStorage.setItem(STORAGE.userId, userId);
+    localStorage.setItem(STORAGE.autoLogin, String(state.autoLogin));
+
+    if (elements.userIdInput) elements.userIdInput.value = userId;
     updateAccountStatus();
-    elements.loginOverlay.classList.add('hidden');
+    if (elements.loginOverlay) elements.loginOverlay.classList.add('hidden');
     showToast(`ようこそ、${userId} さん`);
   }
 
@@ -223,35 +259,35 @@
     state.userId = 'guest';
     state.userPlan = 'Free';
     state.credits = 20;
-    localStorage.removeItem('listeningProUserId');
+    localStorage.removeItem(STORAGE.userId);
+    if (elements.userIdInput) elements.userIdInput.value = '';
     updateAccountStatus();
-    elements.loginOverlay.classList.remove('hidden');
-    elements.userIdInput.value = '';
+    if (elements.loginOverlay) elements.loginOverlay.classList.remove('hidden');
     showToast('ゲストモードで再開しました');
-  }
-
-  function ensureAutoLoginFlag() {
-    localStorage.setItem('listeningProAutoLogin', state.autoLogin ? 'true' : 'false');
   }
 
   function decodeBase64Maybe(value) {
     try {
       const normalized = value.replace(/\s+/g, '');
       if (!normalized || !/^[A-Za-z0-9+/=]+$/.test(normalized)) return null;
-      const decoded = atob(normalized);
-      return decoded;
-    } catch (error) {
+      return atob(normalized);
+    } catch {
       return null;
     }
   }
 
   function buildQuestionsFromSource(rawText) {
     const cleaned = String(rawText || '').trim();
-    if (!cleaned) return DEFAULT_QUESTIONS.map((question, index) => ({ ...question, prompt: `${index + 1}. ${question.prompt}` }));
+    if (!cleaned) {
+      return DEFAULT_QUESTIONS.map((question, index) => ({
+        ...question,
+        prompt: `${index + 1}. ${question.prompt}`
+      }));
+    }
 
     const base64Text = decodeBase64Maybe(cleaned);
-    const sourceText = base64Text && base64Text.trim() ? base64Text : cleaned;
-    const lines = sourceText
+    const text = (base64Text && base64Text.trim()) ? base64Text : cleaned;
+    const lines = text
       .split(/\r?\n|\.|\?|!|\u3002|\uff1f|\uff01/)
       .map((line) => line.trim())
       .filter(Boolean)
@@ -281,11 +317,11 @@
     const question = state.questions[state.currentIndex];
     if (!question) return;
 
-    elements.questionArea.innerHTML = '';
+    if (elements.questionArea) elements.questionArea.innerHTML = '';
 
     const prompt = document.createElement('p');
     prompt.textContent = question.prompt;
-    elements.questionArea.appendChild(prompt);
+    if (elements.questionArea) elements.questionArea.appendChild(prompt);
 
     const list = document.createElement('div');
     list.className = 'choice-list';
@@ -315,22 +351,23 @@
       list.appendChild(button);
     });
 
-    elements.questionArea.appendChild(list);
+    if (elements.questionArea) elements.questionArea.appendChild(list);
 
     const current = state.currentIndex + 1;
     const total = state.questions.length;
-    elements.questionCounter.textContent = `${current}/${total}`;
-    const progress = ((current / total) * 100) || 0;
-    elements.sequencerProgress.style.width = `${progress}%`;
-    elements.sequencerState.textContent = 'ACTIVE';
-    elements.sequencerMessage.textContent = `▶️ 問題 ${current} / ${total}`;
+    if (elements.questionCounter) elements.questionCounter.textContent = `${current}/${total}`;
+    if (elements.sequencerProgress) elements.sequencerProgress.style.width = `${((current / total) * 100) || 0}%`;
+    if (elements.sequencerState) elements.sequencerState.textContent = 'ACTIVE';
+    if (elements.sequencerMessage) elements.sequencerMessage.textContent = `▶️ 問題 ${current} / ${total}`;
 
     const hasAnswer = Number.isInteger(state.answers[state.currentIndex]);
-    elements.submitTestBtn.classList.toggle('hidden', current < total || !hasAnswer);
-    elements.nextQBtn.textContent = state.currentIndex === total - 1 ? '終了' : '次へ ▶';
-    elements.prevQBtn.disabled = state.currentIndex === 0;
-    elements.toggleDoubtBtn.classList.toggle('active', !!state.doubtFlags[state.currentIndex]);
-    elements.toggleDoubtBtn.setAttribute('aria-label', state.doubtFlags[state.currentIndex] ? '疑問あり' : '疑問なし');
+    if (elements.submitTestBtn) elements.submitTestBtn.classList.toggle('hidden', current < total || !hasAnswer);
+    if (elements.nextQBtn) elements.nextQBtn.textContent = state.currentIndex === total - 1 ? '終了' : '次へ ▶';
+    if (elements.prevQBtn) elements.prevQBtn.disabled = state.currentIndex === 0;
+    if (elements.toggleDoubtBtn) {
+      elements.toggleDoubtBtn.classList.toggle('active', !!state.doubtFlags[state.currentIndex]);
+      elements.toggleDoubtBtn.setAttribute('aria-label', state.doubtFlags[state.currentIndex] ? '疑問あり' : '疑問なし');
+    }
   }
 
   function playText(text) {
@@ -346,18 +383,12 @@
     utterance.pitch = 1;
     utterance.volume = 1;
     utterance.onend = () => {
-      elements.sequencerState.textContent = 'READY';
-      elements.sequencerMessage.textContent = '▶️ 音声を再生して開始';
+      if (elements.sequencerState) elements.sequencerState.textContent = 'READY';
+      if (elements.sequencerMessage) elements.sequencerMessage.textContent = '▶️ 音声を再生して開始';
     };
-    elements.sequencerState.textContent = 'PLAYING';
-    elements.sequencerMessage.textContent = '▶️ 再生中';
+    if (elements.sequencerState) elements.sequencerState.textContent = 'PLAYING';
+    if (elements.sequencerMessage) elements.sequencerMessage.textContent = '▶️ 再生中';
     window.speechSynthesis.speak(utterance);
-  }
-
-  function playCurrentQuestion() {
-    const question = state.questions[state.currentIndex];
-    if (!question) return;
-    playText(question.prompt);
   }
 
   function startExamFromText(rawText) {
@@ -368,12 +399,10 @@
     state.currentIndex = 0;
     state.score = 0;
 
-    elements.examTitleDisplay.textContent = 'Listening Test';
+    if (elements.examTitleDisplay) elements.examTitleDisplay.textContent = 'Listening Test';
     setView('exam');
     renderQuestion();
-    if (questions.length) {
-      playText(questions[0].prompt);
-    }
+    if (questions.length) playText(questions[0].prompt);
   }
 
   function handleNextQuestion() {
@@ -404,15 +433,13 @@
     let correct = 0;
 
     state.questions.forEach((question, index) => {
-      if (state.answers[index] === question.answerIndex) {
-        correct += 1;
-      }
+      if (state.answers[index] === question.answerIndex) correct += 1;
     });
 
     state.score = Math.round((correct / total) * 100);
-    elements.scoreDisplay.textContent = String(state.score);
+    if (elements.scoreDisplay) elements.scoreDisplay.textContent = String(state.score);
 
-    elements.resultList.innerHTML = '';
+    if (elements.resultList) elements.resultList.innerHTML = '';
     state.questions.forEach((question, index) => {
       const item = document.createElement('li');
       item.className = 'result-item';
@@ -420,10 +447,8 @@
         <span class="result-icon">${state.answers[index] === question.answerIndex ? '✅' : '❌'}</span>
         <span>Q${index + 1}</span>
       `;
-      item.addEventListener('click', () => {
-        openReviewModal(index);
-      });
-      elements.resultList.appendChild(item);
+      item.addEventListener('click', () => openReviewModal(index));
+      if (elements.resultList) elements.resultList.appendChild(item);
     });
 
     setView('result');
@@ -432,10 +457,12 @@
 
   function openReviewModal(startIndex = 0) {
     const modal = elements.reviewModal;
+    if (!modal) return;
     modal.classList.remove('hidden');
     modal.classList.add('open');
-    elements.reviewModalTitle.textContent = '復習';
-    elements.reviewModalIcon.textContent = '◯';
+
+    if (elements.reviewModalTitle) elements.reviewModalTitle.textContent = '復習';
+    if (elements.reviewModalIcon) elements.reviewModalIcon.textContent = '◯';
 
     const reviewMarkup = state.questions
       .map((question, index) => {
@@ -466,12 +493,14 @@
       })
       .join('');
 
-    elements.reviewScriptArea.innerHTML = reviewMarkup;
+    if (elements.reviewScriptArea) elements.reviewScriptArea.innerHTML = reviewMarkup;
   }
 
   function closeReviewModal() {
-    elements.reviewModal.classList.remove('open');
-    setTimeout(() => elements.reviewModal.classList.add('hidden'), 260);
+    if (elements.reviewModal) {
+      elements.reviewModal.classList.remove('open');
+      setTimeout(() => elements.reviewModal.classList.add('hidden'), 260);
+    }
   }
 
   function toggleDoubt() {
@@ -480,98 +509,119 @@
     renderQuestion();
   }
 
-  function handleUserInput() {
-    const value = elements.dataInput.value.trim();
-    const isReady = !!value;
-    elements.startTestBtn.classList.toggle('disabled', !isReady);
-    elements.startTestBtn.disabled = !isReady;
+  function resetToStart() {
+    state.questions = [];
+    state.answers = [];
+    state.doubtFlags = [];
+    setView('start');
+    if (elements.dataInput) elements.dataInput.value = '';
+    validateInput();
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast('トップに戻りました');
   }
 
   function setupControls() {
-    elements.startTestBtn.disabled = true;
-    elements.startTestBtn.classList.add('disabled');
+    if (elements.startTestBtn) {
+      elements.startTestBtn.disabled = true;
+      elements.startTestBtn.classList.add('disabled');
+      elements.startTestBtn.addEventListener('click', () => {
+        if (elements.startTestBtn.classList.contains('disabled')) return;
+        startExamFromText(elements.dataInput.value);
+      });
+    }
 
-    elements.dataInput.addEventListener('input', handleUserInput);
-    elements.pasteBtn.addEventListener('click', async () => {
-      try {
-        const text = await navigator.clipboard.readText();
-        elements.dataInput.value = text;
-        handleUserInput();
-      } catch (error) {
-        showToast('クリップボードの読み取りに失敗しました');
-      }
+    if (elements.dataInput) {
+      elements.dataInput.addEventListener('input', validateInput);
+    }
+
+    if (elements.pasteBtn) {
+      elements.pasteBtn.addEventListener('click', async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          if (elements.dataInput) elements.dataInput.value = text;
+          validateInput();
+        } catch {
+          showToast('クリップボードの読み取りに失敗しました');
+        }
+      });
+    }
+
+    if (elements.prevQBtn) elements.prevQBtn.addEventListener('click', handlePreviousQuestion);
+    if (elements.nextQBtn) elements.nextQBtn.addEventListener('click', handleNextQuestion);
+    if (elements.submitTestBtn) elements.submitTestBtn.addEventListener('click', submitTest);
+    if (elements.masterPlayBtn) elements.masterPlayBtn.addEventListener('click', () => {
+      const question = state.questions[state.currentIndex];
+      if (question) playText(question.prompt);
     });
+    if (elements.toggleDoubtBtn) elements.toggleDoubtBtn.addEventListener('click', toggleDoubt);
+    if (elements.returnTopBtn) elements.returnTopBtn.addEventListener('click', resetToStart);
 
-    elements.startTestBtn.addEventListener('click', () => {
-      startExamFromText(elements.dataInput.value);
-    });
+    if (elements.loginBtn) elements.loginBtn.addEventListener('click', () => loginUser(elements.userIdInput.value));
+    if (elements.userIdInput) {
+      elements.userIdInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') loginUser(elements.userIdInput.value);
+      });
+    }
 
-    elements.prevQBtn.addEventListener('click', handlePreviousQuestion);
-    elements.nextQBtn.addEventListener('click', handleNextQuestion);
-    elements.submitTestBtn.addEventListener('click', submitTest);
-    elements.masterPlayBtn.addEventListener('click', playCurrentQuestion);
-    elements.toggleDoubtBtn.addEventListener('click', toggleDoubt);
-    elements.returnTopBtn.addEventListener('click', () => {
-      state.questions = [];
-      state.answers = [];
-      setView('start');
-      elements.dataInput.value = '';
-      handleUserInput();
-      showToast('トップに戻りました');
-    });
+    if (elements.settingsBtn) {
+      elements.settingsBtn.addEventListener('click', () => {
+        if (elements.settingsModal) {
+          elements.settingsModal.classList.remove('hidden');
+          elements.settingsModal.classList.add('open');
+        }
+      });
+    }
 
-    elements.loginBtn.addEventListener('click', () => {
-      loginUser(elements.userIdInput.value);
-    });
+    if (elements.closeSettingsBtn) {
+      elements.closeSettingsBtn.addEventListener('click', () => {
+        if (elements.settingsModal) {
+          elements.settingsModal.classList.remove('open');
+          setTimeout(() => elements.settingsModal.classList.add('hidden'), 260);
+        }
+      });
+    }
 
-    elements.userIdInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') loginUser(elements.userIdInput.value);
-    });
+    if (elements.closeReviewBtn) elements.closeReviewBtn.addEventListener('click', closeReviewModal);
+    if (elements.reviewModal) {
+      elements.reviewModal.addEventListener('click', (event) => {
+        if (event.target === elements.reviewModal) closeReviewModal();
+      });
+    }
 
-    elements.settingsBtn.addEventListener('click', () => {
-      elements.settingsModal.classList.remove('hidden');
-      elements.settingsModal.classList.add('open');
-    });
+    if (elements.reviewPlayAllBtn) {
+      elements.reviewPlayAllBtn.addEventListener('click', () => {
+        const fullScript = state.questions.map((question) => question.prompt).join('. ');
+        playText(fullScript);
+      });
+    }
 
-    elements.closeSettingsBtn.addEventListener('click', () => {
-      elements.settingsModal.classList.remove('open');
-      setTimeout(() => elements.settingsModal.classList.add('hidden'), 260);
-    });
+    if (elements.logoutBtn) elements.logoutBtn.addEventListener('click', logoutUser);
+    if (elements.saveSettingsBtn) {
+      elements.saveSettingsBtn.addEventListener('click', () => {
+        state.autoLogin = !!elements.settingAutoLogin.checked;
+        localStorage.setItem(STORAGE.autoLogin, String(state.autoLogin));
+        setSpeedValue(elements.settingSpeed.value, true);
+        if (elements.settingsModal) {
+          elements.settingsModal.classList.remove('open');
+          setTimeout(() => elements.settingsModal.classList.add('hidden'), 260);
+        }
+        showToast('設定を保存しました');
+      });
+    }
 
-    elements.closeReviewBtn.addEventListener('click', closeReviewModal);
-    elements.reviewModal.addEventListener('click', (event) => {
-      if (event.target === elements.reviewModal || event.target === elements.reviewModalBg) {
-        closeReviewModal();
-      }
-    });
+    if (elements.globalSpeed) {
+      elements.globalSpeed.addEventListener('input', (event) => setSpeedValue(event.target.value, true));
+    }
 
-    elements.reviewPlayAllBtn.addEventListener('click', () => {
-      const fullScript = state.questions.map((question) => question.prompt).join('. ');
-      playText(fullScript);
-    });
+    if (elements.settingSpeed) {
+      elements.settingSpeed.addEventListener('input', (event) => {
+        const value = Number(event.target.value);
+        setSpeedValue(value, true);
+      });
+    }
 
-    elements.logoutBtn.addEventListener('click', logoutUser);
-    elements.saveSettingsBtn.addEventListener('click', () => {
-      state.autoLogin = elements.settingAutoLogin.checked;
-      ensureAutoLoginFlag();
-      setSpeedValue(elements.settingSpeed.value);
-      elements.settingsModal.classList.remove('open');
-      setTimeout(() => elements.settingsModal.classList.add('hidden'), 260);
-      showToast('設定を保存しました');
-    });
-
-    elements.globalSpeed.addEventListener('input', (event) => {
-      setSpeedValue(event.target.value);
-    });
-
-    elements.settingSpeed.addEventListener('input', (event) => {
-      const value = Number(event.target.value);
-      setSpeedValue(value);
-      elements.settingSpeedVal.textContent = `${value.toFixed(1)}x`;
-    });
-
-    elements.settingAutoLogin.checked = state.autoLogin;
-    setSpeedValue(state.speed);
+    if (elements.settingAutoLogin) elements.settingAutoLogin.checked = state.autoLogin;
+    setSpeedValue(state.speed, false);
   }
 
   async function initialize() {
@@ -581,22 +631,24 @@
       state.userId = 'guest';
       state.userPlan = 'Free';
       state.credits = 20;
-      localStorage.setItem('listeningProUserId', 'guest');
+      localStorage.setItem(STORAGE.userId, 'guest');
       updateAccountStatus();
-      elements.loginOverlay.classList.add('hidden');
+      if (elements.loginOverlay) elements.loginOverlay.classList.remove('hidden');
     } else {
       const userRecord = state.loadedUsers.get(state.userId) || { credits: 20, plan: 'Free' };
       state.userPlan = userRecord.plan || 'Free';
       state.credits = Number(userRecord.credits || 0);
       updateAccountStatus();
-      elements.loginOverlay.classList.add('hidden');
+      if (elements.loginOverlay) elements.loginOverlay.classList.add('hidden');
     }
 
-    elements.settingsBtn.classList.toggle('hidden', !state.userId || state.userId === 'guest');
-    elements.logoutBtn.classList.toggle('hidden', !state.userId || state.userId === 'guest');
-    elements.accountStatusPill.classList.remove('hidden');
+    if (elements.settingsBtn) elements.settingsBtn.classList.toggle('hidden', !state.userId || state.userId === 'guest');
+    if (elements.logoutBtn) elements.logoutBtn.classList.toggle('hidden', !state.userId || state.userId === 'guest');
+    if (elements.accountStatusPill) elements.accountStatusPill.classList.remove('hidden');
+
     setupControls();
     setView('start');
+    validateInput();
     showToast('Listening Pro を起動しました');
   }
 
