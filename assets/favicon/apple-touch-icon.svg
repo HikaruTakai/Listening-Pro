@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Listening Pro favicon">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#4A78FF"/>
+      <stop offset="50%" stop-color="#7B6CF9"/>
+      <stop offset="100%" stop-color="#89C8FF"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="54" fill="url(#bg)"/>
+  <path d="M72 78h28v100H72zm35 28h28v72h-28zm35-22h28v94h-28zm35 46h28v48h-28z" fill="white" opacity="0.98"/>
+  <circle cx="128" cy="128" r="92" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="10"/>
+</svg>

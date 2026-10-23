@@ -1,0 +1,1019 @@
+const STORAGE_KEYS = {
+  userId: 'listening_pro_user_id',
+  mode: 'listening_pro_mode',
+  autoLogin: 'listening_pro_auto_login',
+  settings: 'listening_pro_settings',
+  credits: 'listening_pro_credits'
+};
+
+const USER_CSV = './data/users.csv';
+const DEFAULT_SETTINGS = { autoLogin: true, defaultSpeed: 1.0 };
+
+const appState = {
+  userId: '',
+  plan: 'Free',
+  credits: 0,
+  data: null,
+  currentQIdx: 0,
+  answers: {},
+  doubts: {},
+  speed: 1.0,
+  initialized: false,
+  userRows: [],
+  review: { active: false, playing: false },
+  seq: { playing: false },
+  playToken: 0,
+  isStarting: false
+};
+
+const $ = (id) => document.getElementById(id);
+
+function showToast(message) {
+  const toast = $('toast');
+  toast.textContent = message;
+  toast.classList.remove('hidden');
+  toast.classList.add('show');
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => {
+    toast.classList.remove('show');
+    toast.classList.add('hidden');
+  }, 1900);
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.settings);
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(appState.settings));
+  } catch {}
+}
+
+appState.settings = loadSettings();
+
+function parseCsvLine(line) {
+  const cells = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      cells.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  cells.push(current.trim());
+  return cells;
+}
+
+async function fetchUsersCsv() {
+  const resp = await fetch(USER_CSV, { cache: 'no-store' });
+  if (!resp.ok) throw new Error('ユーザーデータの取得に失敗しました。');
+  const text = await resp.text();
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) return [];
+  const rows = lines.slice(1).map((line) => parseCsvLine(line));
+  return rows
+    .filter((row) => row.length > 0)
+    .map((row) => ({
+      id: (row[0] || '').trim(),
+      credits: (row[1] || '').trim(),
+      plan: (row[2] || 'Free').trim() || 'Free'
+    }))
+    .filter((row) => row.id);
+}
+
+function normalizePlan(value) {
+  const p = String(value || 'Free').trim();
+  return p || 'Free';
+}
+
+function isProPlan(plan) {
+  return String(plan || '').toUpperCase() === 'PRO';
+}
+
+function getStoredUserId() {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.userId) || '';
+  } catch {
+    return '';
+  }
+}
+
+function setStoredUserId(id) {
+  try {
+    if (id) localStorage.setItem(STORAGE_KEYS.userId, id);
+    else localStorage.removeItem(STORAGE_KEYS.userId);
+  } catch {}
+}
+
+function showMainUI(plan, creditsText) {
+  const overlay = $('loginOverlay');
+  if (overlay) {
+    overlay.classList.add('hidden');
+  }
+
+  const pill = $('accountStatusPill');
+  if (pill) {
+    pill.classList.remove('hidden');
+    pill.classList.add('flex');
+  }
+
+  const settingsBtn = $('settingsBtn');
+  if (settingsBtn) settingsBtn.classList.remove('hidden');
+  const logoutBtn = $('logoutBtn');
+  if (logoutBtn) logoutBtn.classList.remove('hidden');
+
+  const planNode = $('planDisplay');
+  if (planNode) planNode.textContent = plan;
+  const creditNode = $('creditDisplay');
+  if (creditNode) creditNode.textContent = creditsText;
+}
+
+async function verifyUserFromCsv(userId) {
+  try {
+    const rows = await fetchUsersCsv();
+    const matched = rows.find((row) => row.id === userId);
+    if (!matched) return { success: false, error: 'IDが見つかりません。' };
+
+    const rawCredits = matched.credits;
+    const numeric = Number(rawCredits);
+    const validCredits = Number.isFinite(numeric) ? numeric : 0;
+    const plan = normalizePlan(matched.plan);
+
+    return {
+      success: true,
+      plan,
+      credits: isProPlan(plan) ? '∞' : String(validCredits),
+      normalizedCredits: isProPlan(plan) ? Infinity : validCredits
+    };
+  } catch (error) {
+    return { success: false, error: 'ユーザー情報の読み込みに失敗しました。' };
+  }
+}
+
+function validateInput() {
+  const value = $('dataInput').value.trim();
+  const btn = $('startTestBtn');
+  if (!btn) return;
+  if (value.length > 10) {
+    btn.classList.remove('disabled');
+  } else {
+    btn.classList.add('disabled');
+  }
+}
+
+function enableLoginFlow() {
+  const loginBtn = $('loginBtn');
+  const userIdInput = $('userIdInput');
+
+  const startLogin = async () => {
+    const userId = (userIdInput.value || '').trim();
+    if (!userId) {
+      showToast('IDを入力してください。');
+      return;
+    }
+
+    if (loginBtn) loginBtn.disabled = true;
+    const result = await verifyUserFromCsv(userId);
+
+    if (loginBtn) loginBtn.disabled = false;
+
+    if (!result.success) {
+      showToast(result.error || 'ログインに失敗しました。');
+      return;
+    }
+
+    appState.userId = userId;
+    appState.plan = result.plan;
+    appState.credits = result.normalizedCredits;
+
+    if (appState.settings.autoLogin) setStoredUserId(userId);
+    else setStoredUserId('');
+
+    showMainUI(result.plan, isProPlan(result.plan) ? '∞' : String(result.normalizedCredits));
+  };
+
+  if (loginBtn) loginBtn.addEventListener('click', startLogin);
+  if (userIdInput) {
+    userIdInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        startLogin();
+      }
+    });
+  }
+}
+
+function applySpeed(value, persist = false) {
+  const parsed = Math.max(0.7, Math.min(1.8, Number(value) || 1.0));
+  appState.speed = parsed;
+  const global = $('globalSpeed');
+  if (global) global.value = String(parsed);
+  const valueNode = $('globalSpeedVal');
+  if (valueNode) valueNode.textContent = `${parsed.toFixed(1)}x`;
+
+  if (persist) {
+    appState.settings.defaultSpeed = parsed;
+    saveSettings();
+    const settingNode = $('settingSpeed');
+    const settingVal = $('settingSpeedVal');
+    if (settingNode) settingNode.value = String(parsed);
+    if (settingVal) settingVal.textContent = `${parsed.toFixed(1)}x`;
+  }
+}
+
+function resetToStart() {
+  stopSequence();
+  appState.data = null;
+  appState.currentQIdx = 0;
+  appState.answers = {};
+  appState.doubts = {};
+
+  $('viewResult').classList.add('hidden');
+  $('viewExam').classList.add('hidden');
+  $('viewStart').classList.remove('hidden');
+  $('dataInput').value = '';
+  validateInput();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function stopSequence() {
+  invalidatePlayback();
+  appState.seq.playing = false;
+  const button = $('masterPlayBtn');
+  if (button) button.textContent = '音声を再生';
+  const stateNode = $('sequencerState');
+  if (stateNode) stateNode.textContent = 'STANDBY';
+  const messageNode = $('sequencerMessage');
+  if (messageNode) messageNode.textContent = '▶️ 音声を再生して開始';
+  const progress = $('sequencerProgress');
+  if (progress) progress.style.width = '0%';
+}
+
+function invalidatePlayback() {
+  appState.playToken += 1;
+  if (typeof speechSynthesis !== 'undefined') {
+    try { speechSynthesis.cancel(); } catch {}
+  }
+}
+
+function initializeSettingsModal() {
+  const settingsBtn = $('settingsBtn');
+  const closeSettingsBtn = $('closeSettingsBtn');
+  const settingsModal = $('settingsModal');
+  const settingsBg = $('settingsModalBg');
+  const settingsContent = $('settingsModalContent');
+
+  function openSettings() {
+    const autoNode = $('settingAutoLogin');
+    const speedNode = $('settingSpeed');
+    const speedVal = $('settingSpeedVal');
+    if (autoNode) autoNode.checked = !!appState.settings.autoLogin;
+    if (speedNode) speedNode.value = String(appState.settings.defaultSpeed || 1.0);
+    if (speedVal) speedVal.textContent = `${(appState.settings.defaultSpeed || 1.0).toFixed(1)}x`;
+    settingsModal.classList.remove('hidden');
+    requestAnimationFrame(() => {
+      settingsModal.classList.add('open');
+      settingsBg.style.opacity = '1';
+    });
+  }
+
+  function closeSettings() {
+    settingsModal.classList.remove('open');
+    settingsBg.style.opacity = '0';
+    setTimeout(() => settingsModal.classList.add('hidden'), 240);
+  }
+
+  if (settingsBtn) settingsBtn.addEventListener('click', openSettings);
+  if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettings);
+  if (settingsBg) settingsBg.addEventListener('click', closeSettings);
+
+  const speedNode = $('settingSpeed');
+  if (speedNode) {
+    speedNode.addEventListener('input', (event) => {
+      const val = Number(event.target.value) || 1.0;
+      const settingVal = $('settingSpeedVal');
+      if (settingVal) settingVal.textContent = `${val.toFixed(1)}x`;
+    });
+  }
+
+  const saveBtn = $('saveSettingsBtn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => {
+      appState.settings.autoLogin = !!$('settingAutoLogin').checked;
+      appState.settings.defaultSpeed = Number($('settingSpeed').value) || 1.0;
+      saveSettings();
+      applySpeed(appState.settings.defaultSpeed, false);
+      closeSettings();
+      if (!appState.settings.autoLogin) {
+        setStoredUserId('');
+      }
+    });
+  }
+}
+
+function initAppControls() {
+  const startBtn = $('startTestBtn');
+  if (startBtn) {
+    startBtn.addEventListener('click', () => {
+      if (startBtn.classList.contains('disabled')) return;
+      if (!appState.userId) {
+        showToast('ログインが必要です。');
+        return;
+      }
+      if (appState.plan && !isProPlan(appState.plan)) {
+        const remaining = Number.isFinite(appState.credits) ? Number(appState.credits) : 0;
+        if (remaining <= 0) {
+          showToast('クレジット不足です。');
+          return;
+        }
+        appState.credits = remaining - 1;
+        if (Number.isFinite(appState.credits)) {
+          const creditNode = $('creditDisplay');
+          if (creditNode) creditNode.textContent = String(Math.max(0, appState.credits));
+        }
+      }
+      startTest();
+    });
+  }
+
+  $('pasteBtn').addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      $('dataInput').value = text;
+      validateInput();
+    } catch {
+      showToast('クリップボードの読み取りに失敗しました。');
+    }
+  });
+
+  $('dataInput').addEventListener('input', validateInput);
+  $('globalSpeed').addEventListener('input', (event) => applySpeed(event.target.value, true));
+  $('homeBtn')?.addEventListener('click', resetToStart);
+  $('returnTopBtn')?.addEventListener('click', resetToStart);
+  $('prevQBtn')?.addEventListener('click', () => navigate(-1));
+  $('nextQBtn')?.addEventListener('click', () => navigate(1));
+  $('submitTestBtn')?.addEventListener('click', confirmSubmit);
+  $('toggleDoubtBtn')?.addEventListener('click', toggleDoubt);
+  $('masterPlayBtn')?.addEventListener('click', triggerSequence);
+  $('closeReviewBtn')?.addEventListener('click', closeReviewModal);
+  $('reviewPlayAllBtn')?.addEventListener('click', playReviewAll);
+  $('logoutBtn')?.addEventListener('click', () => {
+    appState.userId = '';
+    appState.plan = 'Free';
+    appState.credits = 0;
+    setStoredUserId('');
+    $('accountStatusPill').classList.add('hidden');
+    $('settingsBtn').classList.add('hidden');
+    $('logoutBtn').classList.add('hidden');
+    $('loginOverlay').classList.remove('hidden');
+    $('userIdInput').value = '';
+    showToast('ログアウトしました。');
+  });
+}
+
+function parseNFormat(input) {
+  const text = input.trim();
+  if (!text) throw new Error('入力が空です。');
+
+  const safe = text
+    .replace(/```[a-zA-Z0-9]*\n?/gi, '')
+    .replace(/```/g, '')
+    .trim();
+
+  if (!safe.includes('#TITLE:') && !safe.includes('#Q_START:')) {
+    throw new Error('N-Format 形式ではありません。');
+  }
+
+  const lines = safe.split(/\r?\n/);
+  const data = { title: 'Listening Test', questions: [] };
+  let q = null;
+  let gathering = null;
+  let buffer = [];
+
+  const flush = () => {
+    if (!q) return;
+    if (gathering === 'svg') q.svg = buffer.join('\n').trim();
+    if (gathering === 'table') q.table = buffer.map((line) => line.split('|').map((cell) => cell.trim()));
+    buffer = [];
+    gathering = null;
+  };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+
+    if (gathering === 'svg' && line === '#SVG_END:') {
+      flush();
+      continue;
+    }
+    if (gathering === 'table' && line === '#TABLE_END:') {
+      flush();
+      continue;
+    }
+
+    if (gathering === 'svg') {
+      buffer.push(raw);
+      continue;
+    }
+    if (gathering === 'table') {
+      buffer.push(raw);
+      continue;
+    }
+
+    if (line.startsWith('#TITLE:')) data.title = line.substring(7).trim();
+    else if (line.startsWith('#Q_START:')) {
+      q = {
+        id: data.questions.length,
+        type: line.substring(9).trim(),
+        instruction: '',
+        repeats: 2,
+        dialogue: [],
+        question: { text: '', ja: '' },
+        options: [],
+        answer: null,
+        explanation: '',
+        svg: '',
+        table: null
+      };
+    } else if (q) {
+      if (line === '#SVG_START:') {
+        gathering = 'svg';
+        buffer = [];
+      } else if (line === '#TABLE_START:') {
+        gathering = 'table';
+        buffer = [];
+      } else if (line.startsWith('#INST:')) q.instruction = line.substring(6).trim();
+      else if (line.startsWith('#REP:')) q.repeats = Number(line.substring(5)) || 2;
+      else if (line.startsWith('#DIA:')) {
+        const parts = line.substring(5).split('|');
+        if (parts.length >= 2) q.dialogue.push({ speaker: parts[0].trim(), text: parts[1].trim(), ja: parts[2] ? parts[2].trim() : '' });
+      } else if (line.startsWith('#QTXT:')) {
+        const parts = line.substring(6).split('|');
+        q.question = { text: parts[0].trim(), ja: parts[1] ? parts[1].trim() : '' };
+      } else if (line.startsWith('#OPT:')) q.options = line.substring(5).split('|').map((item) => item.trim());
+      else if (line.startsWith('#ANS:')) q.answer = q.type === 'choice' ? Number(line.substring(5).trim()) : line.substring(5).split(',').map((item) => Number(item.trim()));
+      else if (line.startsWith('#EXP:')) q.explanation = line.substring(5).trim();
+      else if (line.startsWith('#Q_END:')) {
+        if (q.options.length && q.answer !== null) data.questions.push(q);
+        q = null;
+      }
+    }
+  }
+
+  if (!data.questions.length) throw new Error('データがありません。');
+  return data;
+}
+
+function renderQuestion() {
+  const q = appState.data.questions[appState.currentQIdx];
+  if (!q) return;
+
+  $('questionCounter').textContent = `${appState.currentQIdx + 1}/${appState.data.questions.length}`;
+  $('prevQBtn').disabled = appState.currentQIdx === 0;
+
+  if (appState.currentQIdx === appState.data.questions.length - 1) {
+    $('nextQBtn').classList.add('hidden');
+    $('submitTestBtn').classList.remove('hidden');
+  } else {
+    $('nextQBtn').classList.remove('hidden');
+    $('submitTestBtn').classList.add('hidden');
+  }
+
+  const svg = $('svgContainer');
+  if (q.svg && q.svg.length > 5) {
+    svg.innerHTML = q.svg;
+    svg.classList.remove('hidden');
+  } else {
+    svg.innerHTML = '';
+    svg.classList.add('hidden');
+  }
+
+  const area = $('questionArea');
+  area.innerHTML = '';
+
+  const instruction = document.createElement('p');
+  instruction.textContent = q.instruction || '';
+  area.appendChild(instruction);
+
+  if (q.table && q.table.length) {
+    const tableWrap = document.createElement('div');
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    table.style.marginTop = '8px';
+    table.style.fontSize = '0.9rem';
+    const header = q.table[0];
+    const headRow = document.createElement('tr');
+    for (const cell of header) {
+      const th = document.createElement('th');
+      th.textContent = cell;
+      th.style.padding = '10px 12px';
+      th.style.borderBottom = '1px solid rgba(148,163,184,0.25)';
+      th.style.textAlign = 'left';
+      headRow.appendChild(th);
+    }
+    table.appendChild(headRow);
+    for (let i = 1; i < q.table.length; i++) {
+      const row = document.createElement('tr');
+      for (const cell of q.table[i]) {
+        const td = document.createElement('td');
+        td.textContent = cell;
+        td.style.padding = '10px 12px';
+        td.style.borderBottom = '1px solid rgba(148,163,184,0.12)';
+        row.appendChild(td);
+      }
+      table.appendChild(row);
+    }
+    tableWrap.appendChild(table);
+    area.appendChild(tableWrap);
+  }
+
+  if (q.type === 'choice') {
+    const list = document.createElement('div');
+    list.className = 'choice-list';
+    q.options.forEach((opt, index) => {
+      const item = document.createElement('div');
+      item.className = 'choice-item' + (appState.answers[q.id] === index ? ' selected' : '');
+      item.innerHTML = `
+        <span class="choice-radio"><span class="choice-dot"></span></span>
+        <span class="choice-text">${escapeHtml(opt)}</span>
+      `;
+      item.addEventListener('click', () => {
+        appState.answers[q.id] = index;
+        renderQuestion();
+      });
+      list.appendChild(item);
+    });
+    area.appendChild(list);
+  } else if (q.type === 'sort') {
+    renderSortUI(q, area);
+  }
+
+  const doubtButton = $('toggleDoubtBtn');
+  if (doubtButton) {
+    if (appState.doubts[q.id]) {
+      doubtButton.classList.add('active');
+    } else {
+      doubtButton.classList.remove('active');
+    }
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function renderSortUI(q, area) {
+  const list = document.createElement('div');
+  list.className = 'sort-container';
+
+  const slot = document.createElement('div');
+  slot.className = 'sort-slot';
+  const current = appState.answers[q.id] || [];
+
+  if (!current.length) {
+    const msg = document.createElement('div');
+    msg.className = 'sort-empty';
+    msg.textContent = '下の単語をタップして並べてください';
+    slot.appendChild(msg);
+  } else {
+    current.forEach((wordIndex, pos) => {
+      const token = document.createElement('button');
+      token.type = 'button';
+      token.className = 'sort-token';
+      token.textContent = q.options[wordIndex];
+      token.addEventListener('click', () => {
+        current.splice(pos, 1);
+        renderQuestion();
+      });
+      slot.appendChild(token);
+    });
+  }
+
+  const pool = document.createElement('div');
+  pool.className = 'sort-pool';
+  q.options.forEach((word, idx) => {
+    if (current.includes(idx)) return;
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'sort-option';
+    option.textContent = word;
+    option.addEventListener('click', () => {
+      current.push(idx);
+      renderQuestion();
+    });
+    pool.appendChild(option);
+  });
+
+  list.appendChild(slot);
+  list.appendChild(pool);
+  area.appendChild(list);
+}
+
+function toggleDoubt() {
+  const q = appState.data.questions[appState.currentQIdx];
+  if (!q) return;
+  appState.doubts[q.id] = !appState.doubts[q.id];
+  renderQuestion();
+}
+
+function navigate(dir) {
+  stopSequence();
+  appState.currentQIdx += dir;
+  renderQuestion();
+}
+
+function startTest() {
+  try {
+    appState.data = parseNFormat($('dataInput').value);
+  } catch (error) {
+    showToast(error.message || 'データの解読に失敗しました。');
+    return;
+  }
+
+  invalidatePlayback();
+  appState.data.questions.forEach((q) => {
+    appState.answers[q.id] = q.type === 'sort' ? [] : null;
+    appState.doubts[q.id] = false;
+  });
+  appState.currentQIdx = 0;
+
+  $('viewStart').classList.add('hidden');
+  $('viewExam').classList.remove('hidden');
+  $('examTitleDisplay').textContent = appState.data.title || 'Listening Test';
+  renderQuestion();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function confirmSubmit() {
+  const unanswered = appState.data.questions.filter((q) => {
+    if (q.type === 'choice') return appState.answers[q.id] === null;
+    return !(appState.answers[q.id] || []).length;
+  }).length;
+
+  if (unanswered > 0) {
+    const confirmed = window.confirm(`未解答が ${unanswered} 問あります。採点しますか？`);
+    if (!confirmed) return;
+  }
+  submitTest();
+}
+
+function submitTest() {
+  stopSequence();
+  $('viewExam').classList.add('hidden');
+  $('viewResult').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  let correctCount = 0;
+  const list = $('resultList');
+  list.innerHTML = '';
+
+  appState.data.questions.forEach((q, idx) => {
+    const answer = appState.answers[q.id];
+    const ok = q.type === 'choice' ? answer === q.answer : JSON.stringify(answer) === JSON.stringify(q.answer);
+    if (ok) correctCount++;
+
+    const item = document.createElement('li');
+    item.className = 'result-item';
+    item.innerHTML = `
+      <div style="display:inline-flex;align-items:center;gap:10px;">
+        <span class="result-icon" style="color:${ok ? '#34c759' : '#ff3b30'}">${ok ? '◯' : '✕'}</span>
+        <span>Question ${idx + 1}</span>
+      </div>
+      <span style="color: rgba(15,23,42,0.38);">›</span>
+    `;
+    item.addEventListener('click', () => openReviewModal(idx, ok));
+    list.appendChild(item);
+  });
+
+  const score = Math.round((correctCount / (appState.data.questions.length || 1)) * 100);
+  $('scoreDisplay').textContent = String(score);
+}
+
+function openReviewModal(index, ok) {
+  const q = appState.data.questions[index];
+  const modal = $('reviewModal');
+  const bg = $('reviewModalBg');
+  const content = $('reviewModalContent');
+
+  if (!modal || !bg || !content) return;
+
+  modal.classList.remove('hidden');
+  requestAnimationFrame(() => {
+    modal.classList.add('open');
+  });
+
+  $('reviewModalTitle').textContent = `Question ${index + 1}`;
+  $('reviewModalIcon').innerHTML = ok ? '<span style="color:#34c759;">◯</span>' : '<span style="color:#ff3b30;">✕</span>';
+
+  const area = $('reviewScriptArea');
+  area.innerHTML = '';
+
+  const correctAnswer = q.type === 'choice' ? q.options[q.answer] : (q.answer || []).map((i) => q.options[i]).join(' ');
+  const yourAnswer = q.type === 'choice'
+    ? (appState.answers[q.id] !== null ? q.options[appState.answers[q.id]] : '未解答')
+    : ((appState.answers[q.id] || []).length ? (appState.answers[q.id] || []).map((i) => q.options[i]).join(' ') : '未解答');
+
+  const card = document.createElement('div');
+  card.className = 'review-card';
+  card.innerHTML = `
+    <div class="review-answers">
+      <div class="answer-chip correct">Correct: ${escapeHtml(correctAnswer)}</div>
+      <div class="answer-chip ${ok ? 'neutral' : 'wrong'}">Your: ${escapeHtml(yourAnswer)}</div>
+      <div class="answer-chip neutral">Explanation: ${escapeHtml(q.explanation || '')}</div>
+    </div>
+  `;
+  area.appendChild(card);
+
+  q.dialogue.forEach((item, i) => {
+    area.appendChild(createReviewLine(item.speaker, item.text, item.ja, `dia-${i}`));
+  });
+  area.appendChild(createReviewLine('Q', q.question.text, q.question.ja, 'qt'));
+}
+
+function createReviewLine(speaker, text, jaText, id) {
+  const row = document.createElement('div');
+  row.className = 'review-line';
+  row.id = `script-${id}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'review-avatar';
+  avatar.textContent = speaker;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'review-bubble';
+  bubble.dataset.speaker = speaker;
+  bubble.dataset.text = text;
+  bubble.innerHTML = `<p class="en">${escapeHtml(text)}</p><p class="ja">${escapeHtml(jaText || '')}</p>`;
+  bubble.addEventListener('click', () => playSingleLine(speaker, text, bubble));
+
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  return row;
+}
+
+async function playSingleLine(speaker, text, bubble) {
+  speechEngine.warmup();
+  const token = ++appState.playToken;
+  document.querySelectorAll('.review-bubble').forEach((el) => el.classList.remove('active'));
+  bubble.classList.add('active');
+  await speechEngine.speak(text, speaker, token);
+}
+
+async function playReviewAll() {
+  const btn = $('reviewPlayAllBtn');
+  if (appState.review.playing) {
+    invalidatePlayback();
+    appState.review.playing = false;
+    btn.textContent = '通して聴く';
+    document.querySelectorAll('.review-bubble').forEach((el) => el.classList.remove('active'));
+    return;
+  }
+
+  const q = appState.data.questions[appState.currentQIdx] || appState.data.questions[0];
+  if (!q) return;
+
+  const token = ++appState.playToken;
+  appState.review.playing = true;
+  btn.textContent = '停止';
+
+  try {
+    for (const line of q.dialogue) {
+      if (token !== appState.playToken) return;
+      const bubble = document.querySelector(`#script-dia-${q.dialogue.indexOf(line)} .review-bubble`);
+      document.querySelectorAll('.review-bubble').forEach((el) => el.classList.remove('active'));
+      if (bubble) bubble.classList.add('active');
+      await speechEngine.speak(line.text, line.speaker, token);
+      if (token !== appState.playToken) return;
+      await new Promise((resolve) => setTimeout(resolve, 220));
+    }
+
+    const qBubble = document.querySelector('#script-qt .review-bubble');
+    document.querySelectorAll('.review-bubble').forEach((el) => el.classList.remove('active'));
+    if (qBubble) qBubble.classList.add('active');
+    await speechEngine.speak(q.question.text, 'Q', token);
+  } finally {
+    if (token === appState.playToken) {
+      appState.review.playing = false;
+      btn.textContent = '通して聴く';
+      document.querySelectorAll('.review-bubble').forEach((el) => el.classList.remove('active'));
+    }
+  }
+}
+
+function closeReviewModal() {
+  invalidatePlayback();
+  const modal = $('reviewModal');
+  modal.classList.remove('open');
+  setTimeout(() => modal.classList.add('hidden'), 220);
+}
+
+const speechEngine = {
+  voices: [],
+  init() {
+    const update = () => {
+      try {
+        this.voices = window.speechSynthesis.getVoices() || [];
+      } catch {}
+    };
+    update();
+    if ('onvoiceschanged' in speechSynthesis) speechSynthesis.onvoiceschanged = update;
+  },
+  warmup() {
+    if (!('speechSynthesis' in window)) return;
+    try {
+      const u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      u.rate = 1;
+      u.lang = 'en-US';
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    } catch {}
+  },
+  getVoice(langCode) {
+    const margin = this.voices.filter((voice) => {
+      const name = voice.name.toLowerCase();
+      const language = (voice.lang || '').toLowerCase();
+      if (langCode === 'ja') return language.startsWith('ja');
+      return language.startsWith('en') && !/kyoko|otoya|hattori|zarvox|bad news|good news|whisper|bubbles|pipe organ/i.test(name);
+    });
+    if (!margin.length) return null;
+    margin.sort((a, b) => {
+      const s = (v) => {
+        let score = 0;
+        const n = (v.name || '').toLowerCase();
+        if (/enhanced|premium/.test(n)) score += 500;
+        if (/neural|natural/.test(n)) score += 300;
+        if (/samantha|moira|karen|susan|serena|fiona|tessa/i.test(n)) score += 200;
+        if (/alex|daniel|nathan|rishi|evan/i.test(n)) score += 180;
+        if (v.localService) score += 30;
+        return score;
+      };
+      return s(b) - s(a);
+    });
+    return margin[0];
+  },
+  speak(text, speaker, token) {
+    if (!('speechSynthesis' in window)) {
+      showToast('この端末では音声再生が利用できません。');
+      return Promise.resolve();
+    }
+
+    const isJapanese = speaker === 'JA' || speaker === 'Q_JA';
+    const cleaned = this.cleanText(text, isJapanese);
+    if (!cleaned) return Promise.resolve();
+
+    return new Promise((resolve) => {
+      try {
+        const utterance = new SpeechSynthesisUtterance(cleaned);
+        const voice = this.getVoice(isJapanese ? 'ja' : 'en');
+        utterance.lang = isJapanese ? 'ja-JP' : 'en-US';
+        utterance.voice = voice || null;
+        utterance.rate = Math.max(0.6, Math.min(1.8, appState.speed));
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        const timeout = setTimeout(() => {
+          try { speechSynthesis.cancel(); } catch {}
+          resolve();
+        }, 15000);
+
+        utterance.onend = () => {
+          clearTimeout(timeout);
+          if (token === appState.playToken) resolve();
+          else resolve();
+        };
+        utterance.onerror = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+
+        speechSynthesis.cancel();
+        speechSynthesis.speak(utterance);
+      } catch {
+        resolve();
+      }
+    });
+  },
+  cleanText(text, isJapanese) {
+    let value = String(text || '').trim();
+    if (!value) return '';
+    if (isJapanese) {
+      value = value.replace(/\s+/g, ' ');
+      return value;
+    }
+    return value
+      .replace(/^Question\s*[:：]\s*/i, 'Question. ')
+      .replace(/^Q\s*[:：]\s*/i, 'Question. ')
+      .replace(/&/g, ' and ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+};
+
+async function triggerSequence() {
+  if (appState.seq.playing) {
+    stopSequence();
+    return;
+  }
+
+  if (!appState.data || !appState.data.questions[appState.currentQIdx]) return;
+
+  const token = ++appState.playToken;
+  appState.seq.playing = true;
+  const question = appState.data.questions[appState.currentQIdx];
+
+  const btn = $('masterPlayBtn');
+  if (btn) btn.textContent = '停止';
+
+  const stateNode = $('sequencerState');
+  const messageNode = $('sequencerMessage');
+  const progressNode = $('sequencerProgress');
+
+  try {
+    if (stateNode) stateNode.textContent = 'ANNOUNCEMENT';
+    if (messageNode) messageNode.textContent = '問題の指示を読み上げています...';
+    if (progressNode) progressNode.style.width = '12%';
+    await speechEngine.speak(question.instruction || '', 'JA', token);
+    if (token !== appState.playToken) return;
+
+    for (let round = 1; round <= (question.repeats || 2); round++) {
+      if (token !== appState.playToken) return;
+      if (stateNode) stateNode.textContent = `PLAYING (${round}/${question.repeats || 2})`;
+      if (messageNode) messageNode.textContent = '対話を再生中...';
+      if (progressNode) progressNode.style.width = `${20 + round * 18}%`;
+
+      for (const dialogue of question.dialogue) {
+        if (token !== appState.playToken) return;
+        await speechEngine.speak(dialogue.text, dialogue.speaker, token);
+        if (token !== appState.playToken) return;
+      }
+
+      if (stateNode) stateNode.textContent = 'QUESTION';
+      if (messageNode) messageNode.textContent = '質問を再生中...';
+      if (progressNode) progressNode.style.width = `${60 + round * 12}%`;
+      await speechEngine.speak(question.question.text, 'N', token);
+      if (token !== appState.playToken) return;
+    }
+
+    if (stateNode) stateNode.textContent = 'FINISHED';
+    if (messageNode) messageNode.textContent = '解答を記入してください';
+    if (progressNode) progressNode.style.width = '100%';
+  } finally {
+    if (token === appState.playToken) {
+      appState.seq.playing = false;
+      if (btn) btn.textContent = 'もう一度聴く';
+    }
+  }
+}
+
+function initializeApp() {
+  if (appState.initialized) return;
+  appState.initialized = true;
+
+  speechEngine.init();
+  enableLoginFlow();
+  initAppControls();
+  initializeSettingsModal();
+
+  const savedId = getStoredUserId();
+  if (savedId) {
+    (async () => {
+      const result = await verifyUserFromCsv(savedId);
+      if (result.success) {
+        appState.userId = savedId;
+        appState.plan = result.plan;
+        appState.credits = result.normalizedCredits;
+        showMainUI(result.plan, isProPlan(result.plan) ? '∞' : String(result.normalizedCredits));
+      }
+    })();
+  }
+
+  const speedValue = appState.settings.defaultSpeed || 1.0;
+  applySpeed(speedValue, false);
+  validateInput();
+}
+
+document.addEventListener('DOMContentLoaded', initializeApp);

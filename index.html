@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#dfe9ff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>Listening Pro</title>
+    <meta name="description" content="Listening Pro - listening practice with mobile-friendly speech and an elegant liquid-glass UI." />
+    <link rel="icon" type="image/svg+xml" href="assets/favicon/favicon.svg" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="assets/favicon/apple-touch-icon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-blur"></div>
+
+    <header class="topbar glass-panel">
+      <div class="brand-wrap">
+        <div class="brand-mark">L</div>
+        <div>
+          <div class="brand-title">Listening Pro</div>
+        </div>
+      </div>
+
+      <div class="top-controls">
+        <div class="speed-group glass-soft">
+          <span class="label">Speed</span>
+          <input id="globalSpeed" type="range" min="0.7" max="1.8" step="0.1" value="1.0" aria-label="再生速度" />
+          <span id="globalSpeedVal" class="speed-value">1.0x</span>
+        </div>
+
+        <div class="user-pill glass-soft hidden" id="accountStatusPill">
+          <span id="planDisplay" class="plan-display">Free</span>
+          <span class="divider">|</span>
+          <span class="tiny-label">残:</span>
+          <span id="creditDisplay" class="credit-display">0</span>
+        </div>
+
+        <button id="settingsBtn" class="icon-btn glass-soft hidden" aria-label="設定">⚙️</button>
+        <button id="logoutBtn" class="secondary-btn hidden" aria-label="ログアウト">ログアウト</button>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section id="viewStart" class="panel fade-in">
+        <div class="glass-panel intro-card">
+          <div class="intro-row">
+            <div class="ai-badge">AI</div>
+            <div>
+              <h2>問題作成 AI</h2>
+              <p>長野県型のリスニング問題を自動生成</p>
+            </div>
+            <a class="pill-btn youtube" href="https://gemini.google.com" target="_blank" rel="noreferrer">Gemini</a>
+          </div>
+        </div>
+
+        <div class="glass-panel form-card">
+          <h3>Data Input</h3>
+          <p class="muted">Base64 または N-Format の文字列を貼り付けてください。</p>
+          <button id="pasteBtn" class="primary-btn alt" type="button">クリップボードから入力</button>
+          <textarea id="dataInput" placeholder="テキストをここに入力..." spellcheck="false"></textarea>
+          <button id="startTestBtn" class="primary-btn wide disabled" type="button">テストを開始</button>
+        </div>
+      </section>
+
+      <section id="viewExam" class="panel hidden">
+        <div class="exam-head">
+          <h3 id="examTitleDisplay">Listening Test</h3>
+          <div class="counter-badge">Q <span id="questionCounter">1/1</span></div>
+        </div>
+
+        <div class="sequencer glass-panel">
+          <div id="sequencerProgress" class="sequencer-progress"></div>
+          <div id="sequencerState" class="tiny-label sequencer-state">STANDBY</div>
+          <div id="sequencerMessage" class="sequencer-message">▶️ 音声を再生して開始</div>
+          <button id="masterPlayBtn" class="primary-btn" type="button">音声を再生</button>
+        </div>
+
+        <div class="question-shell glass-panel">
+          <button id="toggleDoubtBtn" class="doubt-btn" type="button" aria-label="疑問あり">?</button>
+          <div id="svgContainer" class="svg-box hidden"></div>
+          <div id="questionArea"></div>
+        </div>
+
+        <div class="nav-row">
+          <button id="prevQBtn" class="secondary-btn nav" type="button">◀ 前へ</button>
+          <button id="submitTestBtn" class="primary-btn submit hidden" type="button">採点する</button>
+          <button id="nextQBtn" class="secondary-btn nav" type="button">次へ ▶</button>
+        </div>
+      </section>
+
+      <section id="viewResult" class="panel hidden">
+        <div class="glass-panel score-card">
+          <div class="score-label">SCORE</div>
+          <div class="score-display"><span id="scoreDisplay">0</span><span class="score-max">/100</span></div>
+        </div>
+
+        <div class="glass-panel result-list-card">
+          <div class="result-title">問題リスト</div>
+          <ul id="resultList" class="result-list"></ul>
+        </div>
+
+        <button id="returnTopBtn" class="primary-btn wide" type="button">トップに戻る</button>
+      </section>
+    </main>
+
+    <div id="loginOverlay" class="login-overlay">
+      <div class="login-box glass-panel">
+        <div class="brand-mark login-mark">L</div>
+        <h1>Listening Pro</h1>
+        <p>指定されたIDを入力してください</p>
+
+        <input id="userIdInput" type="text" inputmode="text" autocomplete="username" placeholder="User ID" aria-label="User ID" />
+        <button id="loginBtn" class="primary-btn wide" type="button">ログイン</button>
+      </div>
+    </div>
+
+    <div id="reviewModal" class="modal hidden">
+      <div id="reviewModalBg" class="modal-bg"></div>
+      <div id="reviewModalContent" class="modal-sheet">
+        <div class="sheet-top">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header-row">
+            <div class="sheet-header-left">
+              <span id="reviewModalIcon" class="review-icon">◯</span>
+              <h3 id="reviewModalTitle">復習</h3>
+            </div>
+            <button id="closeReviewBtn" class="icon-btn glass-soft" type="button" aria-label="閉じる">✕</button>
+          </div>
+        </div>
+
+        <div class="review-controls">
+          <button id="reviewPlayAllBtn" class="primary-btn small" type="button">通して聴く</button>
+        </div>
+
+        <div id="reviewScriptArea" class="review-area"></div>
+      </div>
+    </div>
+
+    <div id="settingsModal" class="modal hidden">
+      <div id="settingsModalBg" class="modal-bg"></div>
+      <div id="settingsModalContent" class="modal-sheet settings-sheet">
+        <div class="sheet-top">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header-row">
+            <h3>⚙️ 設定</h3>
+            <button id="closeSettingsBtn" class="icon-btn glass-soft" type="button" aria-label="閉じる">✕</button>
+          </div>
+        </div>
+
+        <div class="settings-inner">
+          <div class="setting-row">
+            <div>
+              <div class="setting-title">自動ログイン</div>
+              <div class="muted">次回起動時にIDを保持します</div>
+            </div>
+            <label class="switch">
+              <input id="settingAutoLogin" type="checkbox" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row slider-row">
+            <div class="setting-title">デフォルト再生速度</div>
+            <span id="settingSpeedVal" class="speed-value">1.0x</span>
+          </div>
+          <input id="settingSpeed" type="range" min="0.7" max="1.8" step="0.1" value="1.0" />
+
+          <button id="saveSettingsBtn" class="primary-btn wide" type="button">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>
