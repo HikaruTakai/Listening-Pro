@@ -6,7 +6,9 @@ const APP_SHELL = [
   './app.js',
   './manifest.webmanifest',
   './assets/favicon/favicon.svg',
-  './assets/favicon/apple-touch-icon.svg',
+  './assets/favicon/icon-standard.svg',
+  './assets/favicon/icon-iphone.svg',
+  './assets/favicon/icon-ipad.svg',
   './data/users.csv'
 ];
 

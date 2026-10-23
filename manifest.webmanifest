@@ -81,30 +81,55 @@ function parseCsvLine(line) {
   return cells;
 }
 
+function normalizePlan(value) {
+  const p = String(value || 'Free').trim();
+  return p.replace(/^['"]|['"]$/g, '').trim() || 'Free';
+}
+
+function isPremiumPlan(plan) {
+  const text = String(plan || '').trim().toUpperCase();
+  return ['PRO', 'PLUS', 'PREMIUM', 'VIP'].includes(text);
+}
+
+function findRowValue(row, header, keyList, fallbackIndex) {
+  const normalized = (header || []).map((val) => String(val || '').trim().toLowerCase());
+  const index = keyList.reduce((best, key) => {
+    if (best >= 0) return best;
+    const found = normalized.indexOf(String(key).toLowerCase());
+    return found >= 0 ? found : -1;
+  }, -1);
+
+  const targetIndex = index >= 0 ? index : fallbackIndex;
+  return row[targetIndex] || '';
+}
+
 async function fetchUsersCsv() {
   const resp = await fetch(USER_CSV, { cache: 'no-store' });
   if (!resp.ok) throw new Error('ユーザーデータの取得に失敗しました。');
+
   const text = await resp.text();
-  const lines = text.split(/\r?\n/).filter(Boolean);
-  if (lines.length < 2) return [];
+  const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
+  if (!lines.length) return [];
+
+  const header = parseCsvLine(lines[0]).map((value) => value.trim());
   const rows = lines.slice(1).map((line) => parseCsvLine(line));
+
   return rows
-    .filter((row) => row.length > 0)
-    .map((row) => ({
-      id: (row[0] || '').trim(),
-      credits: (row[1] || '').trim(),
-      plan: (row[2] || 'Free').trim() || 'Free'
-    }))
-    .filter((row) => row.id);
-}
+    .map((row) => {
+      const id = findRowValue(row, header, ['id'], 0).trim();
+      const credits = findRowValue(row, header, ['credits', 'credit'], 1).trim();
+      const plan = findRowValue(row, header, ['plan', 'tier'], 2).trim() || 'Free';
 
-function normalizePlan(value) {
-  const p = String(value || 'Free').trim();
-  return p || 'Free';
-}
+      if (!id) return null;
 
-function isProPlan(plan) {
-  return String(plan || '').toUpperCase() === 'PRO';
+      const numeric = Number(credits);
+      return {
+        id,
+        credits: Number.isFinite(numeric) ? String(numeric) : '0',
+        plan: normalizePlan(plan)
+      };
+    })
+    .filter(Boolean);
 }
 
 function getStoredUserId() {
@@ -124,9 +149,7 @@ function setStoredUserId(id) {
 
 function showMainUI(plan, creditsText) {
   const overlay = $('loginOverlay');
-  if (overlay) {
-    overlay.classList.add('hidden');
-  }
+  if (overlay) overlay.classList.add('hidden');
 
   const pill = $('accountStatusPill');
   if (pill) {
@@ -159,8 +182,8 @@ async function verifyUserFromCsv(userId) {
     return {
       success: true,
       plan,
-      credits: isProPlan(plan) ? '∞' : String(validCredits),
-      normalizedCredits: isProPlan(plan) ? Infinity : validCredits
+      credits: isPremiumPlan(plan) ? '∞' : String(validCredits),
+      normalizedCredits: isPremiumPlan(plan) ? Infinity : validCredits
     };
   } catch (error) {
     return { success: false, error: 'ユーザー情報の読み込みに失敗しました。' };
@@ -171,11 +194,7 @@ function validateInput() {
   const value = $('dataInput').value.trim();
   const btn = $('startTestBtn');
   if (!btn) return;
-  if (value.length > 10) {
-    btn.classList.remove('disabled');
-  } else {
-    btn.classList.add('disabled');
-  }
+  btn.classList.toggle('disabled', value.length <= 0);
 }
 
 function enableLoginFlow() {
@@ -206,7 +225,7 @@ function enableLoginFlow() {
     if (appState.settings.autoLogin) setStoredUserId(userId);
     else setStoredUserId('');
 
-    showMainUI(result.plan, isProPlan(result.plan) ? '∞' : String(result.normalizedCredits));
+    showMainUI(result.plan, isPremiumPlan(result.plan) ? '∞' : String(result.normalizedCredits));
   };
 
   if (loginBtn) loginBtn.addEventListener('click', startLogin);
@@ -245,10 +264,14 @@ function resetToStart() {
   appState.answers = {};
   appState.doubts = {};
 
-  $('viewResult').classList.add('hidden');
-  $('viewExam').classList.add('hidden');
-  $('viewStart').classList.remove('hidden');
-  $('dataInput').value = '';
+  const resultView = $('viewResult');
+  if (resultView) resultView.classList.add('hidden');
+  const examView = $('viewExam');
+  if (examView) examView.classList.add('hidden');
+  const startView = $('viewStart');
+  if (startView) startView.classList.remove('hidden');
+  const dataInput = $('dataInput');
+  if (dataInput) dataInput.value = '';
   validateInput();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -278,7 +301,6 @@ function initializeSettingsModal() {
   const closeSettingsBtn = $('closeSettingsBtn');
   const settingsModal = $('settingsModal');
   const settingsBg = $('settingsModalBg');
-  const settingsContent = $('settingsModalContent');
 
   function openSettings() {
     const autoNode = $('settingAutoLogin');
@@ -290,13 +312,13 @@ function initializeSettingsModal() {
     settingsModal.classList.remove('hidden');
     requestAnimationFrame(() => {
       settingsModal.classList.add('open');
-      settingsBg.style.opacity = '1';
+      if (settingsBg) settingsBg.style.opacity = '1';
     });
   }
 
   function closeSettings() {
     settingsModal.classList.remove('open');
-    settingsBg.style.opacity = '0';
+    if (settingsBg) settingsBg.style.opacity = '0';
     setTimeout(() => settingsModal.classList.add('hidden'), 240);
   }
 
@@ -321,9 +343,7 @@ function initializeSettingsModal() {
       saveSettings();
       applySpeed(appState.settings.defaultSpeed, false);
       closeSettings();
-      if (!appState.settings.autoLogin) {
-        setStoredUserId('');
-      }
+      if (!appState.settings.autoLogin) setStoredUserId('');
     });
   }
 }
@@ -337,7 +357,7 @@ function initAppControls() {
         showToast('ログインが必要です。');
         return;
       }
-      if (appState.plan && !isProPlan(appState.plan)) {
+      if (appState.plan && !isPremiumPlan(appState.plan)) {
         const remaining = Number.isFinite(appState.credits) ? Number(appState.credits) : 0;
         if (remaining <= 0) {
           showToast('クレジット不足です。');
@@ -419,23 +439,11 @@ function parseNFormat(input) {
     const line = raw.trim();
     if (!line) continue;
 
-    if (gathering === 'svg' && line === '#SVG_END:') {
-      flush();
-      continue;
-    }
-    if (gathering === 'table' && line === '#TABLE_END:') {
-      flush();
-      continue;
-    }
+    if (gathering === 'svg' && line === '#SVG_END:') { flush(); continue; }
+    if (gathering === 'table' && line === '#TABLE_END:') { flush(); continue; }
 
-    if (gathering === 'svg') {
-      buffer.push(raw);
-      continue;
-    }
-    if (gathering === 'table') {
-      buffer.push(raw);
-      continue;
-    }
+    if (gathering === 'svg') { buffer.push(raw); continue; }
+    if (gathering === 'table') { buffer.push(raw); continue; }
 
     if (line.startsWith('#TITLE:')) data.title = line.substring(7).trim();
     else if (line.startsWith('#Q_START:')) {
@@ -568,11 +576,7 @@ function renderQuestion() {
 
   const doubtButton = $('toggleDoubtBtn');
   if (doubtButton) {
-    if (appState.doubts[q.id]) {
-      doubtButton.classList.add('active');
-    } else {
-      doubtButton.classList.remove('active');
-    }
+    appState.doubts[q.id] ? doubtButton.classList.add('active') : doubtButton.classList.remove('active');
   }
 }
 
@@ -721,9 +725,7 @@ function openReviewModal(index, ok) {
   if (!modal || !bg || !content) return;
 
   modal.classList.remove('hidden');
-  requestAnimationFrame(() => {
-    modal.classList.add('open');
-  });
+  requestAnimationFrame(() => modal.classList.add('open'));
 
   $('reviewModalTitle').textContent = `Question ${index + 1}`;
   $('reviewModalIcon').innerHTML = ok ? '<span style="color:#34c759;">◯</span>' : '<span style="color:#ff3b30;">✕</span>';
@@ -861,17 +863,17 @@ const speechEngine = {
     });
     if (!margin.length) return null;
     margin.sort((a, b) => {
-      const s = (v) => {
-        let score = 0;
+      const score = (v) => {
+        let total = 0;
         const n = (v.name || '').toLowerCase();
-        if (/enhanced|premium/.test(n)) score += 500;
-        if (/neural|natural/.test(n)) score += 300;
-        if (/samantha|moira|karen|susan|serena|fiona|tessa/i.test(n)) score += 200;
-        if (/alex|daniel|nathan|rishi|evan/i.test(n)) score += 180;
-        if (v.localService) score += 30;
-        return score;
+        if (/enhanced|premium/.test(n)) total += 500;
+        if (/neural|natural/.test(n)) total += 300;
+        if (/samantha|moira|karen|susan|serena|fiona|tessa/i.test(n)) total += 200;
+        if (/alex|daniel|nathan|rishi|evan/i.test(n)) total += 180;
+        if (v.localService) total += 30;
+        return total;
       };
-      return s(b) - s(a);
+      return score(b) - score(a);
     });
     return margin[0];
   },
@@ -902,8 +904,7 @@ const speechEngine = {
 
         utterance.onend = () => {
           clearTimeout(timeout);
-          if (token === appState.playToken) resolve();
-          else resolve();
+          resolve();
         };
         utterance.onerror = () => {
           clearTimeout(timeout);
@@ -1006,7 +1007,7 @@ function initializeApp() {
         appState.userId = savedId;
         appState.plan = result.plan;
         appState.credits = result.normalizedCredits;
-        showMainUI(result.plan, isProPlan(result.plan) ? '∞' : String(result.normalizedCredits));
+        showMainUI(result.plan, isPremiumPlan(result.plan) ? '∞' : String(result.normalizedCredits));
       }
     })();
   }

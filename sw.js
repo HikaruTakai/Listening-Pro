@@ -9,10 +9,22 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "assets/favicon/favicon.svg",
+      "src": "assets/favicon/icon-standard.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    },
+    {
+      "src": "assets/favicon/icon-iphone.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/favicon/icon-ipad.svg",
+      "sizes": "167x167",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }

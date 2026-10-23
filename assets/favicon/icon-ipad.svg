@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Listening Pro iPhone icon">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#baeefb"/>
+      <stop offset="100%" stop-color="#cfdcff"/>
+    </linearGradient>
+    <linearGradient id="headband" x1="0" x2="1">
+      <stop offset="0%" stop-color="#1eaaf4"/>
+      <stop offset="100%" stop-color="#0f6fe9"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="106" fill="url(#bg)"/>
+  <g>
+    <path d="M110 212c0-93 82-170 184-170s184 77 184 170v20H110z" fill="url(#headband)"/>
+    <path d="M100 230c0-110 92-202 212-202s212 92 212 202v34H100z" fill="none" stroke="#0e3d69" stroke-width="18" stroke-linecap="round"/>
+    <circle cx="176" cy="252" r="44" fill="#fdf4e7"/>
+    <circle cx="336" cy="252" r="44" fill="#fdf4e7"/>
+    <circle cx="188" cy="260" r="16" fill="#1d2029"/>
+    <circle cx="324" cy="260" r="16" fill="#1d2029"/>
+    <ellipse cx="256" cy="296" rx="60" ry="42" fill="#f4e6d6"/>
+    <path d="M224 330c18 26 40 38 64 38s46-12 64-38" fill="none" stroke="#e27d6e" stroke-width="11" stroke-linecap="round"/>
+    <rect x="122" y="294" width="72" height="128" rx="36" fill="#f4b048"/>
+    <rect x="318" y="294" width="72" height="128" rx="36" fill="#f4b048"/>
+    <rect x="188" y="246" width="34" height="114" rx="17" fill="#1a8ee8"/>
+    <rect x="290" y="246" width="34" height="114" rx="17" fill="#1a8ee8"/>
+    <path d="M138 430c0-46 45-78 118-78s118 32 118 78" fill="#f8f0df"/>
+    <circle cx="140" cy="429" r="28" fill="#f8d6c2"/>
+    <circle cx="372" cy="429" r="28" fill="#f8d6c2"/>
+  </g>
+</svg>
