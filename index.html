@@ -8,7 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Listening Pro" />
     <title>Listening Pro</title>
-    <meta name="description" content="Listening Pro - listening practice with mobile-friendly speech and an elegant liquid-glass UI." />
+    <meta
+      name="description"
+      content="Listening Pro - listening practice with mobile-friendly speech and an elegant liquid-glass UI."
+    />
     <link rel="icon" type="image/svg+xml" href="assets/favicon/favicon.svg" />
     <link rel="apple-touch-icon" href="assets/favicon/icon-iphone.svg" />
     <link rel="manifest" href="manifest.webmanifest" />
@@ -48,141 +51,139 @@
       <section id="viewStart" class="panel fade-in">
         <div class="glass-panel intro-card">
           <div class="intro-row">
-            <div class="ai-badge">AI</div>
-            <div>
-              <h2>問題作成 AI</h2>
-              <p>長野県型のリスニング問題を自動生成</p>
+            <div class="intro-copy">
+              <p class="eyebrow">Listening Practice</p>
+              <h1>英語の音声を聞いて、自然な返答を選ぶ</h1>
             </div>
-            <a class="pill-btn youtube" href="https://gemini.google.com" target="_blank" rel="noreferrer">Gemini</a>
+          </div>
+
+          <div class="panel-block">
+            <label class="field-label" for="dataInput">音声テキスト</label>
+            <textarea id="dataInput" rows="8" placeholder="例: Good morning. I would like a coffee and a sandwich, please."></textarea>
+          </div>
+
+          <div class="action-row">
+            <button id="pasteBtn" class="secondary-btn" type="button">貼り付け</button>
+            <button id="startTestBtn" class="primary-btn" type="button" disabled>開始</button>
           </div>
         </div>
+      </section>
 
-        <div class="glass-panel form-card">
-          <h3>Data Input</h3>
-          <p class="muted">Base64 または N-Format の文字列を貼り付けてください。</p>
-          <button id="pasteBtn" class="primary-btn alt" type="button">クリップボードから入力</button>
-          <textarea id="dataInput" placeholder="テキストをここに入力..." spellcheck="false"></textarea>
-          <button id="startTestBtn" class="primary-btn wide disabled" type="button">テストを開始</button>
+      <section id="viewExam" class="panel hidden fade-in">
+        <div class="glass-panel exam-card">
+          <div class="exam-header">
+            <div>
+              <p class="eyebrow">Listening Test</p>
+              <h2 id="examTitleDisplay">Listening Test</h2>
+            </div>
+            <button id="masterPlayBtn" class="secondary-btn" type="button">再生</button>
+          </div>
+
+          <div class="status-strip">
+            <div class="count-badge" id="questionCounter">1/1</div>
+            <div class="progress-wrap">
+              <div class="progress-bar">
+                <span id="sequencerProgress"></span>
+              </div>
+            </div>
+            <div class="status-text" id="sequencerState">READY</div>
+          </div>
+
+          <div class="message-line" id="sequencerMessage">▶️ 音声を再生して開始</div>
+
+          <div class="question-box" id="questionArea"></div>
+
+          <div class="exam-actions">
+            <button id="prevQBtn" class="secondary-btn" type="button">◀ 前へ</button>
+            <button id="toggleDoubtBtn" class="toggle-btn" type="button" aria-label="疑問なし">疑問</button>
+            <button id="nextQBtn" class="primary-btn" type="button">次へ ▶</button>
+          </div>
+
+          <button id="submitTestBtn" class="submit-btn hidden" type="button">採点する</button>
         </div>
       </section>
 
-      <section id="viewExam" class="panel hidden">
-        <div class="exam-head">
-          <h3 id="examTitleDisplay">Listening Test</h3>
-          <div class="counter-badge">Q <span id="questionCounter">1/1</span></div>
-        </div>
+      <section id="viewResult" class="panel hidden fade-in">
+        <div class="glass-panel result-card">
+          <div class="result-header">
+            <div>
+              <p class="eyebrow">Result</p>
+              <h2>採点結果</h2>
+            </div>
+            <div class="score-box">
+              <span id="scoreDisplay">0</span>
+              <small>点</small>
+            </div>
+          </div>
 
-        <div class="sequencer glass-panel">
-          <div id="sequencerProgress" class="sequencer-progress"></div>
-          <div id="sequencerState" class="tiny-label sequencer-state">STANDBY</div>
-          <div id="sequencerMessage" class="sequencer-message">▶️ 音声を再生して開始</div>
-          <button id="masterPlayBtn" class="primary-btn" type="button">音声を再生</button>
-        </div>
-
-        <div class="question-shell glass-panel">
-          <button id="toggleDoubtBtn" class="doubt-btn" type="button" aria-label="疑問あり">?</button>
-          <div id="svgContainer" class="svg-box hidden"></div>
-          <div id="questionArea"></div>
-        </div>
-
-        <div class="nav-row">
-          <button id="prevQBtn" class="secondary-btn nav" type="button">◀ 前へ</button>
-          <button id="submitTestBtn" class="primary-btn submit hidden" type="button">採点する</button>
-          <button id="nextQBtn" class="secondary-btn nav" type="button">次へ ▶</button>
-        </div>
-      </section>
-
-      <section id="viewResult" class="panel hidden">
-        <div class="glass-panel score-card">
-          <div class="score-label">SCORE</div>
-          <div class="score-display"><span id="scoreDisplay">0</span><span class="score-max">/100</span></div>
-        </div>
-
-        <div class="glass-panel result-list-card">
-          <div class="result-title">問題リスト</div>
           <ul id="resultList" class="result-list"></ul>
-        </div>
 
-        <button id="returnTopBtn" class="primary-btn wide" type="button">トップに戻る</button>
+          <div class="action-row result-actions">
+            <button id="returnTopBtn" class="secondary-btn" type="button">トップへ戻る</button>
+          </div>
+        </div>
       </section>
     </main>
 
     <div id="loginOverlay" class="login-overlay">
-      <div class="login-box glass-panel">
-        <div class="brand-mark login-mark">L</div>
+      <div class="login-card glass-panel">
+        <div class="login-mark">L</div>
         <h1>Listening Pro</h1>
-        <p>指定されたIDを入力してください</p>
-
-        <input id="userIdInput" type="text" inputmode="text" autocomplete="username" placeholder="User ID" aria-label="User ID" />
-        <button id="loginBtn" class="primary-btn wide" type="button">ログイン</button>
-      </div>
-    </div>
-
-    <div id="reviewModal" class="modal hidden">
-      <div id="reviewModalBg" class="modal-bg"></div>
-      <div id="reviewModalContent" class="modal-sheet">
-        <div class="sheet-top">
-          <div class="sheet-handle"></div>
-          <div class="sheet-header-row">
-            <div class="sheet-header-left">
-              <span id="reviewModalIcon" class="review-icon">◯</span>
-              <h3 id="reviewModalTitle">復習</h3>
-            </div>
-            <button id="closeReviewBtn" class="icon-btn glass-soft" type="button" aria-label="閉じる">✕</button>
-          </div>
-        </div>
-
-        <div class="review-controls">
-          <button id="reviewPlayAllBtn" class="primary-btn small" type="button">通して聴く</button>
-        </div>
-
-        <div id="reviewScriptArea" class="review-area"></div>
+        <p>IDを入力してください</p>
+        <input id="userIdInput" type="text" placeholder="User ID" autocomplete="username" />
+        <button id="loginBtn" class="primary-btn" type="button">ログイン</button>
       </div>
     </div>
 
     <div id="settingsModal" class="modal hidden">
-      <div id="settingsModalBg" class="modal-bg"></div>
-      <div id="settingsModalContent" class="modal-sheet settings-sheet">
-        <div class="sheet-top">
-          <div class="sheet-handle"></div>
-          <div class="sheet-header-row">
-            <h3>⚙️ 設定</h3>
-            <button id="closeSettingsBtn" class="icon-btn glass-soft" type="button" aria-label="閉じる">✕</button>
-          </div>
+      <div class="modal-backdrop" data-close="settings"></div>
+      <div class="modal-panel glass-panel">
+        <div class="modal-header">
+          <h3>設定</h3>
+          <button id="closeSettingsBtn" class="icon-btn" type="button" aria-label="閉じる">✕</button>
         </div>
 
-        <div class="settings-inner">
-          <div class="setting-row">
-            <div>
-              <div class="setting-title">自動ログイン</div>
-              <div class="muted">次回起動時にIDを保持します</div>
-            </div>
+        <div class="settings-list">
+          <label class="toggle-row">
+            <span>自動ログイン</span>
             <label class="switch">
-              <input id="settingAutoLogin" type="checkbox" checked />
-              <span class="slider"></span>
+              <input id="settingAutoLogin" type="checkbox" />
+              <span class="slider-t"></span>
             </label>
-          </div>
+          </label>
 
-          <div class="setting-row slider-row">
-            <div class="setting-title">デフォルト再生速度</div>
-            <span id="settingSpeedVal" class="speed-value">1.0x</span>
+          <div class="setting-row">
+            <span>再生速度</span>
+            <div class="speed-inline">
+              <input id="settingSpeed" type="range" min="0.7" max="1.8" step="0.1" value="1.0" />
+              <span id="settingSpeedVal">1.0x</span>
+            </div>
           </div>
-          <input id="settingSpeed" type="range" min="0.7" max="1.8" step="0.1" value="1.0" />
-
-          <button id="saveSettingsBtn" class="primary-btn wide" type="button">保存</button>
         </div>
+
+        <button id="saveSettingsBtn" class="primary-btn" type="button">保存</button>
       </div>
     </div>
 
-    <div id="toast" class="toast hidden" aria-live="polite"></div>
+    <div id="reviewModal" class="modal hidden">
+      <div class="modal-backdrop" data-close="review"></div>
+      <div class="modal-panel review-panel glass-panel">
+        <div class="modal-header">
+          <div class="review-title-wrap">
+            <span id="reviewModalIcon" class="review-icon">◯</span>
+            <h3 id="reviewModalTitle">復習</h3>
+          </div>
+          <button id="closeReviewBtn" class="icon-btn" type="button" aria-label="閉じる">✕</button>
+        </div>
+
+        <div id="reviewScriptArea" class="review-script-area"></div>
+
+        <button id="reviewPlayAllBtn" class="primary-btn" type="button">全体を再生</button>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden">保存しました</div>
 
     <script src="app.js"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js').catch(() => {});
-        });
-      }
-    </script>
   </body>
 </html>
