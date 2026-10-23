@@ -1,35 +1,47 @@
 # Listening Pro
 
-Listening Pro は GitHub Pages で動作する静的な PWA です。ログインは ID のみを前提にしており、ユーザー一覧は `data/users.csv` から読み込みます。  
+Listening Pro は GitHub Pages で公開する静的 PWA です。バックエンド不要・外部 API 依存なし・ブラウザの `speechSynthesis` を利用して音声を再生します。
 
-- ルール: `A2` 以降に ID、`B2` 以降に Credits、`C2` 以降に Plan を置く
-- `D` 以降はメモ列として無視
-- `Plan` が `Pro` の場合は無制限の扱いとなります
-- 端末の native TTS (`speechSynthesis`) を使うため、外部 API や有料課金は不要です
+このリポジトリは、GitHub Pages にそのままデプロイできる最終公開版を想定しています。ユーザー認証は `data/users.csv` の ID 照合方式で行い、サーバー処理は不要です。
 
-## デプロイ手順
+## 主要仕様
 
-1. このリポジトリを GitHub に push する
-2. GitHub の `Settings` → `Pages` に移動
-3. `Deploy from a branch` を選択
-4. `Branch: main`, `Folder: / (root)` を選択
-5. 保存後、数分で `https://<user>.github.io/Listening-Pro/` が有効になる
+- GitHub Pages で動作する静的サイト
+- ログインは ID のみで管理
+- `data/users.csv` からユーザー情報を読み込み
+- `Plan` が `Pro` / `Plus` / `Premium` / `VIP` なら無制限扱い
+- TTS は端末の `speechSynthesis` を使う
+- iPhone Safari でもユーザー操作後に再生を開始する設計
 
-## CSV の編集
+## ルール
 
-`data/users.csv` の例:
+- `ID` 列に ID を置く
+- `Credits` 列に残数を置く
+- `Plan` 列に `Free` / `Pro` などのプラン名を置く
+- `D` 列以降はメモ列として無視
+
+## CSV 例
 
 ```csv
-ID,Credits,Plan,Notes
-admin123,15,Free,Desk Demo
-pro-user,0,Pro,Premium Demo
-demo-user,10,Free,Sample User
+ID,Credits,Plan
+admin123,15,Free
+demo-user,10,Free
+pro-user,0,Pro
 ```
 
-- `ID` はログイン識別子
-- `Credits` は残り回数
-- `Plan` は `Free` / `Pro` のみを想定
-- `D` 列以降は無視されます
+## GitHub Pages へのデプロイ
+
+1. このリポジトリを GitHub に push する
+2. GitHub の `Settings` → `Pages` に移動する
+3. `Deploy from a branch` を選択する
+4. `Branch: main`、`Folder: / (root)` を選択する
+5. 保存後、数分で公開 URL が有効になる
+
+公開 URL の形式は次のとおりです。
+
+```text
+https://<username>.github.io/Listening-Pro/
+```
 
 ## ローカル実行
 
@@ -37,10 +49,29 @@ demo-user,10,Free,Sample User
 python3 -m http.server 8000
 ```
 
-その後、ブラウザで `http://localhost:8000` を開く
+その後、ブラウザで `http://localhost:8000` を開いて動作確認できます。
+
+## ディレクトリ構成
+
+```text
+Listening-Pro/
+├─ index.html
+├─ app.js
+├─ styles.css
+├─ sw.js
+├─ manifest.webmanifest
+├─ data/
+│  └─ users.csv
+├─ assets/
+│  └─ favicon/
+├─ README.md
+└─ LICENSE
+```
 
 ## 補足
 
-- 本アプリは Apple の Safari と一般的なブラウザで動くよう設計
-- speechSynthesis は端末に依存せず無料・無制限で動作
-- iPhone Safari で必ずユーザー操作後に TTS を開始する設計
+- このアプリは GitHub Pages 向けに設計されています。
+- バックエンドやサーバー側スクリプトは不要です。
+- 外部 API なしで動作するため、公開設定がシンプルです。
+- Safari ではユーザー操作後に音声再生が始まるようにしているため、ボタン操作が必須です。
+
