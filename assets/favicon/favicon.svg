@@ -1,39 +1,79 @@
-const CACHE_NAME = 'listening-pro-v1';
-const APP_SHELL = [
-  './',
-  './index.html',
-  './styles.css',
-  './app.js',
-  './manifest.webmanifest',
-  './assets/favicon/favicon.svg',
-  './assets/favicon/icon-standard.svg',
-  './assets/favicon/icon-iphone.svg',
-  './assets/favicon/icon-ipad.svg',
-  './data/users.csv'
-];
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Listening Pro favicon">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#d8f3ff"/>
+      <stop offset="100%" stop-color="#c7d8ff"/>
+    </linearGradient>
+    <linearGradient id="headband" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#1eaef6"/>
+      <stop offset="100%" stop-color="#1276e8"/>
+    </linearGradient>
+    <linearGradient id="earcup" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ffb14a"/>
+      <stop offset="100%" stop-color="#ff8d2c"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#3a5c7e" flood-opacity="0.18"/>
+    </filter>
+  </defs>
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
-  self.skipWaiting();
-});
+  <rect width="512" height="512" rx="118" fill="url(#bg)"/>
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
-  );
-  self.clients.claim();
-});
+  <g opacity="0.9" fill="#f8d67a" stroke="#f2b55a" stroke-width="4">
+    <path d="M66 112l10 0 4 18 4-18 10 0-8 8 3 18-9-7-9 7 3-18z"/>
+    <path d="M438 120l10 0 4 18 4-18 10 0-8 8 3 18-9-7-9 7 3-18z"/>
+    <path d="M390 70l10 0 4 18 4-18 10 0-8 8 3 18-9-7-9 7 3-18z"/>
+    <path d="M82 372l12 0 4 16 4-16 12 0-8 8 3 16-11-8-11 8 3-16z"/>
+    <path d="M410 390l12 0 4 16 4-16 12 0-8 8 3 16-11-8-11 8 3-16z"/>
+  </g>
 
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        return response;
-      }).catch(() => cached);
-    })
-  );
-});
+  <g opacity="0.9" fill="#f9e7e2">
+    <path d="M84 184c14-42 46-69 86-69 18 0 34 7 47 20-26 8-48 24-63 48-12 19-21 44-24 69-17-15-33-40-46-68z"/>
+    <path d="M428 184c-14-42-46-69-86-69-18 0-34 7-47 20 26 8 48 24 63 48 12 19 21 44 24 69 17-15 33-40 46-68z"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <path d="M92 206c0-95 77-172 172-172s172 77 172 172v15H92z" fill="url(#headband)"/>
+    <path d="M82 220c0-118 95-214 214-214s214 96 214 214v41H82z" fill="none" stroke="#0d3f69" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <g>
+      <ellipse cx="152" cy="366" rx="58" ry="90" fill="#f7d7ac"/>
+      <ellipse cx="360" cy="366" rx="58" ry="90" fill="#f7d7ac"/>
+      <rect x="122" y="298" width="72" height="132" rx="36" fill="url(#earcup)"/>
+      <rect x="318" y="298" width="72" height="132" rx="36" fill="url(#earcup)"/>
+      <rect x="172" y="252" width="34" height="116" rx="17" fill="#1c96ed"/>
+      <rect x="306" y="252" width="34" height="116" rx="17" fill="#1c96ed"/>
+    </g>
+
+    <g>
+      <path d="M166 176c-20 3-38 20-42 40-4 22 9 41 30 49 21 9 47 1 58-16 13-19 7-43-9-58-11-10-24-17-37-15z" fill="#f3d9b0"/>
+      <path d="M346 176c20 3 38 20 42 40 4 22-9 41-30 49-21 9-47 1-58-16-13-19-7-43 9-58 11-10 24-17 37-15z" fill="#f3d9b0"/>
+
+      <ellipse cx="256" cy="302" rx="126" ry="112" fill="#f7f1e6"/>
+      <ellipse cx="256" cy="294" rx="92" ry="82" fill="#f8f4ee"/>
+      <ellipse cx="204" cy="272" rx="18" ry="22" fill="#fff"/>
+      <ellipse cx="308" cy="272" rx="18" ry="22" fill="#fff"/>
+      <circle cx="204" cy="274" r="12" fill="#2a2b2f"/>
+      <circle cx="308" cy="274" r="12" fill="#2a2b2f"/>
+      <circle cx="198" cy="268" r="5" fill="#fff"/>
+      <circle cx="302" cy="268" r="5" fill="#fff"/>
+
+      <ellipse cx="256" cy="320" rx="52" ry="34" fill="#f5e0d7"/>
+      <path d="M222 326c19 24 33 34 34 34s17-10 34-34" fill="none" stroke="#e57c6c" stroke-width="10" stroke-linecap="round"/>
+      <circle cx="256" cy="312" r="8" fill="#f28d8d"/>
+      <path d="M234 300c8-18 22-28 38-28 17 0 31 11 39 30" fill="none" stroke="#d3a58d" stroke-width="8" stroke-linecap="round"/>
+
+      <ellipse cx="192" cy="346" rx="28" ry="22" fill="#f8d6c5"/>
+      <ellipse cx="320" cy="346" rx="28" ry="22" fill="#f8d6c5"/>
+      <circle cx="146" cy="404" r="20" fill="#f7d9c8"/>
+      <circle cx="366" cy="404" r="20" fill="#f7d9c8"/>
+      <circle cx="146" cy="404" r="8" fill="#e29b83"/>
+      <circle cx="366" cy="404" r="8" fill="#e29b83"/>
+    </g>
+  </g>
+
+  <g opacity="0.9" fill="#fff" stroke="#9ad6f7" stroke-width="4">
+    <path d="M118 60c8 23 12 34 18 38-18 6-30 17-38 32-17-21-12-46 20-70z"/>
+    <path d="M392 70c12 23 20 34 33 36-23 9-38 24-44 39-18-15-18-42 11-75z"/>
+  </g>
+</svg>
