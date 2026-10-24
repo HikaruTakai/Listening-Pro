@@ -1,189 +1,374 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#dfe9ff" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Listening Pro" />
-    <title>Listening Pro</title>
-    <meta
-      name="description"
-      content="Listening Pro - listening practice with mobile-friendly speech and an elegant liquid-glass UI."
-    />
-    <link rel="icon" type="image/svg+xml" href="assets/favicon/favicon.svg" />
-    <link rel="apple-touch-icon" href="assets/favicon/icon-iphone.svg" />
-    <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div class="bg-blur"></div>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Listening Pro">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#e9f0fb">
+<meta name="color-scheme" content="light">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self'; font-src 'self' data:; form-action 'self'">
+<meta name="description" content="Listening Pro: 英語リスニング学習アプリ。自分の問題データで演習・採点・復習ができます。">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon-32.png">
+<link rel="icon" type="image/svg+xml" href="./assets/icons/icon-standard.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="167x167" href="./assets/icons/apple-touch-icon-ipad.png">
+<title>Listening Pro</title>
 
-    <header class="topbar glass-panel">
-      <div class="brand-wrap">
-        <div class="brand-mark">L</div>
-        <div>
-          <div class="brand-title">Listening Pro</div>
-        </div>
+
+  <link rel="stylesheet" href="./assets/css/app.css">
+</head>
+<body class="min-h-[100dvh] flex flex-col overflow-x-hidden">
+
+<!-- ログイン -->
+<div id="loginOverlay" class="fixed inset-0 z-[100] flex flex-col justify-center items-center bg-slate-100/80 backdrop-blur-xl"
+     style="padding-top:var(--safe-top);padding-bottom:var(--safe-bottom);">
+  <div class="bg-white/95 p-7 rounded-[24px] w-[90%] max-w-sm shadow-2xl border border-white/60 flex flex-col items-center">
+    <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[18px] flex items-center justify-center text-white font-black text-3xl shadow-lg mb-5">L</div>
+    <h1 class="text-2xl font-extrabold text-slate-800 mb-1">Listening Pro</h1>
+    <p class="text-xs text-slate-500 mb-7">IDを入力してください</p>
+    <input type="text" id="userIdInput" placeholder="User ID" inputmode="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"
+           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 mb-4 outline-none focus:border-blue-500 font-mono text-center text-slate-700 font-bold">
+    <button id="loginBtn" class="w-full bg-[#007aff] text-white font-bold py-3.5 rounded-xl shadow-lg mb-4 spring">ログイン</button>
+    <div class="w-full flex items-center gap-2 my-2 opacity-40"><div class="flex-grow h-px bg-slate-400"></div><span class="text-[10px] font-black text-slate-500">OR</span><div class="flex-grow h-px bg-slate-400"></div></div>
+    <button id="guestBtn" class="w-full bg-white text-slate-600 font-bold py-3.5 rounded-xl shadow-sm border border-slate-200 spring">ゲストとして試す</button>
+  </div>
+</div>
+
+<!-- ヘッダー -->
+<header class="fixed top-2 left-2 right-2 z-50" style="top:calc(8px + var(--safe-top));">
+  <div class="max-w-4xl mx-auto glass rounded-2xl px-3 py-2.5 flex flex-wrap justify-between items-center gap-2">
+    <h1 class="text-sm font-extrabold text-slate-800 shrink-0 flex items-center">
+      <svg class="w-5 h-5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+      Listening Pro
+    </h1>
+    <div class="flex items-center space-x-2 bg-white/60 px-3 py-1.5 rounded-full text-xs">
+      <span class="text-slate-500 font-semibold hidden sm:inline">Speed:</span>
+      <input type="range" id="globalSpeed" min="0.7" max="1.8" step="0.1" value="1.0" class="w-20">
+      <span id="globalSpeedVal" class="font-mono font-bold text-blue-600 w-9 text-right">1.0x</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <div id="accountStatusPill" class="hidden items-center space-x-1.5 bg-white/60 px-3 py-1.5 rounded-full text-xs">
+        <span id="planDisplay" class="font-bold text-indigo-600"></span><span class="text-slate-300">|</span>
+        <span class="text-slate-500">残:</span><span id="creditDisplay" class="font-black text-slate-800"></span>
       </div>
+      <button id="homeBtn" class="hidden bg-white/70 text-slate-600 p-2.5 rounded-full spring">🏠</button>
+      <button id="settingsBtn" class="hidden bg-white/70 text-slate-600 p-2.5 rounded-full spring">⚙️</button>
+      <button id="logoutBtn" class="hidden bg-slate-100 text-slate-600 font-bold px-3 py-2 rounded-full text-xs spring">ログアウト</button>
+    </div>
+  </div>
+</header>
 
-      <div class="top-controls">
-        <div class="speed-group glass-soft">
-          <span class="label">Speed</span>
-          <input id="globalSpeed" type="range" min="0.7" max="1.8" step="0.1" value="1.0" aria-label="再生速度" />
-          <span id="globalSpeedVal" class="speed-value">1.0x</span>
-        </div>
+<button id="homeFab" class="hidden fixed right-4 bg-slate-800 text-white rounded-full shadow-2xl spring z-[60]" style="bottom:calc(16px + var(--safe-bottom));width:56px;height:56px;display:none;align-items:center;justify-content:center">🏠</button>
 
-        <div class="user-pill glass-soft hidden" id="accountStatusPill">
-          <span id="planDisplay" class="plan-display">Free</span>
-          <span class="divider">|</span>
-          <span class="tiny-label">残:</span>
-          <span id="creditDisplay" class="credit-display">0</span>
-        </div>
+<main class="flex-grow max-w-3xl mx-auto w-full px-4 flex flex-col gap-5" style="padding-top:calc(80px + var(--safe-top));padding-bottom:calc(40px + var(--safe-bottom));">
 
-        <button id="settingsBtn" class="icon-btn glass-soft hidden" aria-label="設定">⚙️</button>
-        <button id="logoutBtn" class="secondary-btn hidden" aria-label="ログアウト">ログアウト</button>
-      </div>
-    </header>
+<!-- 開始画面 -->
+<div id="viewStart" class="fade space-y-5">
+  <div class="glass rounded-[24px] p-5 flex items-center justify-between gap-4">
+    <div class="flex items-center space-x-4">
+      <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shrink-0">G</div>
+      <div><h3 class="font-bold text-slate-800 text-base">問題作成AI (Gemini)</h3><p class="text-xs text-slate-500">長野県型入試問題を自動生成</p></div>
+    </div>
+    <a href="https://gemini.google.com/gem/16191J3m6-vRc2WCqNC0wJCFQplKZBZ0s" target="_blank" rel="noopener noreferrer" class="btn text-center bg-white/70 text-indigo-600 font-bold px-5 py-2.5 rounded-xl text-sm flex items-center justify-center spring">Gemを開く</a>
+  </div>
+  <div class="glass rounded-[24px] p-6">
+    <h2 class="text-xl font-bold text-slate-800 mb-2">Data Input</h2>
+    <p class="text-sm text-slate-500 mb-5">Base64またはN-Formatのテキストを貼り付けてください。</p>
+    <button id="pasteBtn" class="w-full mb-4 bg-white/60 text-blue-600 border border-white font-bold py-3 px-6 rounded-xl shadow-sm flex justify-center items-center spring">クリップボードからペースト</button>
+    <textarea aria-label="問題データ" id="dataInput" placeholder="テキストをここに入力..." autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"
+              class="w-full h-32 bg-white/50 border border-white/60 rounded-xl p-4 font-mono text-slate-600 resize-none outline-none focus:ring-2 focus:ring-blue-300"></textarea>
+    <button id="startTestBtn" class="w-full mt-6 bg-[#007aff] text-white font-bold py-3.5 rounded-xl shadow-lg opacity-50 cursor-not-allowed flex justify-center items-center spring">テストを開始</button>
+  </div>
+</div>
 
-    <main class="app-shell">
-      <section id="viewStart" class="panel fade-in">
-        <div class="glass-panel intro-card">
-          <div class="intro-row">
-            <div class="intro-copy">
-              <p class="eyebrow">Listening Practice</p>
-              <h1>英語の音声を聞いて、自然な返答を選ぶ</h1>
-            </div>
-          </div>
+<!-- 試験画面 -->
+<div id="viewExam" class="hidden fade flex-col flex-grow">
+  <div class="flex justify-between items-center mb-3 px-2">
+    <h2 id="examTitleDisplay" class="text-base font-bold text-slate-800 truncate pr-4"></h2>
+    <div class="bg-white/80 px-3 py-1 rounded-full text-xs font-black text-blue-600">Q <span id="questionCounter"></span></div>
+  </div>
+  <div id="sequencerDisplay" class="bg-black/90 text-white p-5 rounded-[24px] text-center relative overflow-hidden shadow-xl mb-5">
+    <div id="sequencerProgress" class="absolute top-0 left-0 h-1 bg-blue-500 w-0 transition-all duration-100"></div>
+    <div id="sequencerState" class="text-[10px] font-bold text-slate-400 mb-1 tracking-[0.2em] uppercase">STANDBY</div>
+    <div id="sequencerMessage" class="text-base font-bold min-h-[1.5rem]">▶️ 再生をタップして開始</div>
+    <button aria-label="音声を再生または停止" id="masterPlayBtn" class="mt-4 bg-white text-black font-bold py-3 px-8 rounded-full shadow-lg flex items-center mx-auto spring text-sm"><span class="pointer-events-none">音声を再生</span></button>
+  </div>
+  <div class="glass p-5 rounded-[24px] flex-grow relative">
+    <button id="toggleDoubtBtn" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/60 text-slate-400 shadow-sm spring z-10">?</button>
+    <div id="svgContainer" class="svg-c mb-5 hidden"></div>
+    <div id="questionArea"></div>
+  </div>
+  <div class="flex justify-between mt-5 gap-3">
+    <button id="prevQBtn" class="flex-1 py-3.5 bg-white/70 font-bold rounded-xl disabled:opacity-40 shadow-sm spring text-sm">◀ 前へ</button>
+    <button id="submitTestBtn" class="flex-[2] py-3.5 bg-[#34c759] text-white font-bold rounded-xl hidden spring text-sm">採点する</button>
+    <button id="nextQBtn" class="flex-1 py-3.5 bg-white/70 font-bold rounded-xl disabled:opacity-40 shadow-sm spring text-sm">次へ ▶</button>
+  </div>
+</div>
 
-          <div class="panel-block">
-            <label class="field-label" for="dataInput">音声テキスト</label>
-            <textarea id="dataInput" rows="8" placeholder="例: Good morning. I would like a coffee and a sandwich, please."></textarea>
-          </div>
+<!-- 結果画面 -->
+<div id="viewResult" class="hidden fade space-y-5 pb-10">
+  <div class="glass rounded-[24px] p-8 text-center">
+    <h2 class="text-sm font-bold text-slate-500 mb-1">SCORE</h2>
+    <div class="text-[4rem] leading-none font-black text-slate-800"><span id="scoreDisplay">0</span><span class="text-2xl text-slate-300 ml-1">/100</span></div>
+  </div>
+  <div class="glass rounded-[24px] overflow-hidden">
+    <div class="bg-white/50 px-5 py-3 border-b border-white/50"><h3 class="text-slate-700 font-bold text-sm">問題リスト (タップで復習)</h3></div>
+    <ul id="resultList" class="divide-y divide-white/50"></ul>
+  </div>
+  <button id="returnTopBtn" class="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl shadow-lg spring">トップに戻る</button>
+</div>
+</main>
 
-          <div class="action-row">
-            <button id="pasteBtn" class="secondary-btn" type="button">貼り付け</button>
-            <button id="startTestBtn" class="primary-btn" type="button" disabled>開始</button>
-          </div>
-        </div>
-      </section>
-
-      <section id="viewExam" class="panel hidden fade-in">
-        <div class="glass-panel exam-card">
-          <div class="exam-header">
-            <div>
-              <p class="eyebrow">Listening Test</p>
-              <h2 id="examTitleDisplay">Listening Test</h2>
-            </div>
-            <button id="masterPlayBtn" class="secondary-btn" type="button">再生</button>
-          </div>
-
-          <div class="status-strip">
-            <div class="count-badge" id="questionCounter">1/1</div>
-            <div class="progress-wrap">
-              <div class="progress-bar">
-                <span id="sequencerProgress"></span>
-              </div>
-            </div>
-            <div class="status-text" id="sequencerState">READY</div>
-          </div>
-
-          <div class="message-line" id="sequencerMessage">▶️ 音声を再生して開始</div>
-
-          <div class="question-box" id="questionArea"></div>
-
-          <div class="exam-actions">
-            <button id="prevQBtn" class="secondary-btn" type="button">◀ 前へ</button>
-            <button id="toggleDoubtBtn" class="toggle-btn" type="button" aria-label="疑問なし">疑問</button>
-            <button id="nextQBtn" class="primary-btn" type="button">次へ ▶</button>
-          </div>
-
-          <button id="submitTestBtn" class="submit-btn hidden" type="button">採点する</button>
-        </div>
-      </section>
-
-      <section id="viewResult" class="panel hidden fade-in">
-        <div class="glass-panel result-card">
-          <div class="result-header">
-            <div>
-              <p class="eyebrow">Result</p>
-              <h2>採点結果</h2>
-            </div>
-            <div class="score-box">
-              <span id="scoreDisplay">0</span>
-              <small>点</small>
-            </div>
-          </div>
-
-          <ul id="resultList" class="result-list"></ul>
-
-          <div class="action-row result-actions">
-            <button id="returnTopBtn" class="secondary-btn" type="button">トップへ戻る</button>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <div id="loginOverlay" class="login-overlay">
-      <div class="login-card glass-panel">
-        <div class="login-mark">L</div>
-        <h1>Listening Pro</h1>
-        <p>IDを入力してください</p>
-        <input id="userIdInput" type="text" placeholder="User ID" autocomplete="username" />
-        <button id="loginBtn" class="primary-btn" type="button">ログイン</button>
+<!-- 復習モーダル -->
+<div id="reviewModal" class="fixed inset-0 z-[80] flex justify-center items-end hidden pointer-events-none">
+  <div class="absolute inset-0 bg-slate-900/40 opacity-0 transition-opacity" id="reviewModalBg"></div>
+  <div class="sheet w-full md:max-w-2xl bg-white h-[85dvh] rounded-t-[24px] flex flex-col shadow-2xl pointer-events-auto" id="reviewModalContent" style="padding-bottom:var(--safe-bottom);">
+    <div class="flex flex-col items-center p-3 border-b border-slate-100 shrink-0">
+      <div class="w-10 h-1 bg-slate-200 rounded-full mb-3"></div>
+      <div class="flex justify-between items-center w-full px-2">
+        <div class="flex items-center"><span id="reviewModalIcon" class="mr-2 text-xl"></span><h3 id="reviewModalTitle" class="font-bold text-slate-800 text-lg">復習</h3></div>
+        <button id="closeReviewBtn" class="bg-slate-100 text-slate-500 p-2.5 rounded-full spring">✕</button>
       </div>
     </div>
+    <div class="px-4 py-3 bg-slate-50/80 border-b border-slate-100 flex justify-between items-center shrink-0">
+      <button id="reviewPlayAllBtn" class="bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold shadow-md flex items-center spring"><span class="pointer-events-none">通して聴く</span></button>
+    </div>
+    <div class="flex-grow overflow-y-auto p-4 pb-10 bg-white" id="reviewScriptArea"></div>
+  </div>
+</div>
 
-    <div id="settingsModal" class="modal hidden">
-      <div class="modal-backdrop" data-close="settings"></div>
-      <div class="modal-panel glass-panel">
-        <div class="modal-header">
-          <h3>設定</h3>
-          <button id="closeSettingsBtn" class="icon-btn" type="button" aria-label="閉じる">✕</button>
-        </div>
+<!-- 汎用モーダル -->
+<div id="customModal" class="fixed inset-0 z-[110] flex justify-center items-center hidden pointer-events-none">
+  <div class="absolute inset-0 bg-slate-900/30 opacity-0 transition-opacity" id="customModalBg"></div>
+  <div class="bg-white/95 w-[85%] max-w-sm rounded-[20px] p-6 shadow-2xl transform scale-95 opacity-0 transition-all pointer-events-auto" id="customModalBox">
+    <h3 id="customModalTitle" class="font-bold text-center text-lg text-slate-800 mb-2"></h3>
+    <p id="customModalText" class="text-sm text-center text-slate-600 mb-6 whitespace-pre-line"></p>
+    <div class="flex flex-col gap-2.5">
+      <button id="customModalConfirm" class="w-full py-3 rounded-xl bg-blue-600 text-white font-bold spring text-sm">OK</button>
+      <button id="customModalCancel" class="w-full py-3 rounded-xl bg-slate-100 text-slate-700 font-bold spring text-sm">キャンセル</button>
+    </div>
+  </div>
+</div>
 
-        <div class="settings-list">
-          <label class="toggle-row">
-            <span>自動ログイン</span>
-            <label class="switch">
-              <input id="settingAutoLogin" type="checkbox" />
-              <span class="slider-t"></span>
-            </label>
-          </label>
-
-          <div class="setting-row">
-            <span>再生速度</span>
-            <div class="speed-inline">
-              <input id="settingSpeed" type="range" min="0.7" max="1.8" step="0.1" value="1.0" />
-              <span id="settingSpeedVal">1.0x</span>
-            </div>
-          </div>
-        </div>
-
-        <button id="saveSettingsBtn" class="primary-btn" type="button">保存</button>
+<!-- 設定モーダル -->
+<div id="settingsModal" class="fixed inset-0 z-[105] flex justify-center items-end hidden pointer-events-none">
+  <div class="absolute inset-0 bg-slate-900/40 opacity-0 transition-opacity" id="settingsModalBg"></div>
+  <div class="sheet w-full md:max-w-lg bg-white rounded-t-[24px] shadow-2xl pointer-events-auto max-h-[85dvh] flex flex-col" id="settingsModalContent" style="padding-bottom:var(--safe-bottom);">
+    <div class="flex flex-col items-center p-3 border-b border-slate-100 shrink-0">
+      <div class="w-10 h-1 bg-slate-200 rounded-full mb-3"></div>
+      <div class="flex justify-between items-center w-full px-2">
+        <h3 class="font-bold text-slate-800 text-lg">⚙️ 設定</h3>
+        <button id="closeSettingsBtn" class="bg-slate-100 text-slate-500 p-2.5 rounded-full spring">✕</button>
       </div>
     </div>
-
-    <div id="reviewModal" class="modal hidden">
-      <div class="modal-backdrop" data-close="review"></div>
-      <div class="modal-panel review-panel glass-panel">
-        <div class="modal-header">
-          <div class="review-title-wrap">
-            <span id="reviewModalIcon" class="review-icon">◯</span>
-            <h3 id="reviewModalTitle">復習</h3>
-          </div>
-          <button id="closeReviewBtn" class="icon-btn" type="button" aria-label="閉じる">✕</button>
-        </div>
-
-        <div id="reviewScriptArea" class="review-script-area"></div>
-
-        <button id="reviewPlayAllBtn" class="primary-btn" type="button">全体を再生</button>
+    <div class="p-5 space-y-5 overflow-y-auto">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex-grow"><p class="font-bold text-slate-800 text-sm">自動ログイン</p><p class="text-xs text-slate-500 mt-0.5">次回起動時にIDを保持します</p></div>
+        <label class="switch"><input type="checkbox" id="settingAutoLogin"><span class="slider-t"></span></label>
       </div>
+      <div class="h-px bg-slate-100"></div>
+      <div>
+        <div class="flex justify-between items-center mb-1"><p class="font-bold text-slate-800 text-sm">デフォルト読み上げ速度</p><span id="settingSpeedVal" class="font-mono font-bold text-blue-600 text-sm">1.0x</span></div>
+        <input type="range" id="settingSpeed" min="0.7" max="1.8" step="0.1" value="1.0">
+      </div>
+      <button id="saveSettingsBtn" class="w-full py-3 rounded-xl bg-[#007aff] text-white font-bold spring text-sm">保存</button>
     </div>
+  </div>
+</div>
 
-    <div id="toast" class="toast hidden">保存しました</div>
-
-    <script src="app.js"></script>
-  </body>
+  <script src="./assets/js/app.js" defer></script>
+</body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

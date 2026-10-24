@@ -835,7 +835,7 @@ else initializeApp();
 function validateInput(){
   const v = $('dataInput').value.trim();
   const b = $('startTestBtn');
-  if (v.length > 0) b.classList.remove('opacity-50', 'cursor-not-allowed');
+  if (v.length > 10) b.classList.remove('opacity-50', 'cursor-not-allowed');
   else b.classList.add('opacity-50', 'cursor-not-allowed');
 }
 
@@ -945,9 +945,7 @@ function renderQuestion(){
 }
 
 function renderSortUI(q, container){
-  const arr = Array.isArray(state.answers[q.id]) ? state.answers[q.id] : [];
-  if (!Array.isArray(state.answers[q.id])) state.answers[q.id] = arr;
-
+  const arr = state.answers[q.id] || [];
   const w = document.createElement('div');
   w.className = 'bg-white/80 rounded-[20px] border border-white/80 overflow-hidden shadow-sm';
 
@@ -960,7 +958,7 @@ function renderSortUI(q, container){
     const b = document.createElement('button');
     b.className = 'px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-sm spring';
     b.textContent = q.options[wi];
-    b.onclick = () => { arr.splice(pos, 1); state.answers[q.id] = [...arr]; renderQuestion(); };
+    b.onclick = () => { arr.splice(pos, 1); renderQuestion(); };
     slot.appendChild(b);
   });
 
@@ -971,7 +969,7 @@ function renderSortUI(q, container){
       const b = document.createElement('button');
       b.className = 'px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg shadow-sm spring';
       b.textContent = wd;
-      b.onclick = () => { arr.push(idx); state.answers[q.id] = [...arr]; renderQuestion(); };
+      b.onclick = () => { arr.push(idx); renderQuestion(); };
       pool.appendChild(b);
     }
   });
@@ -1313,5 +1311,4 @@ if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{}));
 }
 window.addEventListener('pagehide',()=>{try{speech.cancelPlayback();}catch(e){}});
-
 
